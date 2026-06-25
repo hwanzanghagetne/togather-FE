@@ -1,0 +1,71 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: 'Pretendard JP';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../_togather1/_ds/wanted-design-system-88f151b3-fcf7-42b7-aa22-8cb7c7589713/assets/fonts/PretendardJPVariable.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Wanted Sans Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../_togather1/_ds/wanted-design-system-88f151b3-fcf7-42b7-aa22-8cb7c7589713/assets/fonts/WantedSansVariable.woff2') format('woff2-variations');
+}
+
+:root {
+  --primary: #0066FF;
+  --primary-hover: #005EEB;
+  --primary-press: #0054D1;
+  --text-normal: #16161A;
+  --text-neutral: #4A4D56;
+  --text-secondary: #6A6D76;
+  --text-assistive: #9A9DA6;
+  --text-placeholder: #BCBFC7;
+  --positive: #00BF40;
+  --positive-dark: #00973A;
+  --cautionary: #FF9200;
+  --negative: #FF4242;
+  --wds-fill: #F2F3F6;
+  --wds-fill-alt: #F8F9FB;
+  --wds-line: #E8E9ED;
+  --wds-line-strong: #C8CAD0;
+  --font-sans: 'Pretendard JP', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-display: 'Wanted Sans Variable', 'Wanted Sans', 'Pretendard JP', 'Pretendard', system-ui, sans-serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #fff;
+  color: var(--text-normal);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
