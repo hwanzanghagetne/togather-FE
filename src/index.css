@@ -7,7 +7,7 @@
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url('../_togather1/_ds/wanted-design-system-88f151b3-fcf7-42b7-aa22-8cb7c7589713/assets/fonts/PretendardJPVariable.woff2') format('woff2-variations');
+  src: url('/fonts/PretendardJPVariable.woff2') format('woff2-variations');
 }
 
 @font-face {
@@ -15,7 +15,7 @@
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url('../_togather1/_ds/wanted-design-system-88f151b3-fcf7-42b7-aa22-8cb7c7589713/assets/fonts/WantedSansVariable.woff2') format('woff2-variations');
+  src: url('/fonts/WantedSansVariable.woff2') format('woff2-variations');
 }
 
 :root {
@@ -69,3 +69,4 @@ img {
   display: block;
   max-width: 100%;
 }
+
