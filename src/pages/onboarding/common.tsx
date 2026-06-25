@@ -1,7 +1,7 @@
 import React from 'react'
 import { ChevronLeft } from 'lucide-react'
-import logoMark from '../../../_togather2/design_handoff_onboarding_flow/assets/togather-logo-mark.svg'
-import logoMarkWhite from '../../../_togather2/design_handoff_onboarding_flow/assets/togather-logo-mark-white.svg'
+const logoMark = '/branding/togather-logo-mark.svg'
+const logoMarkWhite = '/branding/togather-logo-mark-white.svg'
 
 export const ONBOARDING_STORAGE_KEY = 'togather-onboarding-complete'
 
@@ -185,3 +185,4 @@ export function BrandLockup() {
     </div>
   )
 }
+
