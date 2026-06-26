@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Plus, SendHorizonal, Users, Zap } from 'lucide-react'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+import { markJoinedMeetup } from '../meetupSession'
 
 interface ApiMessage {
   id: number
@@ -107,6 +108,7 @@ export default function ChatRoomPage() {
       .then((list: ApiMessage[]) => {
         const am = avatarMap.current
         setMessages(list.map((m) => toDisplayMessage(m, myId, am)))
+        markJoinedMeetup(Number(mid))
       })
       .catch(() => {})
   }, [mid, myId])
@@ -440,3 +442,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-assistive)',
   },
 }
+
+
+

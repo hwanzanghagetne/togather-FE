@@ -14,14 +14,6 @@ function KakaoIcon() {
   )
 }
 
-function AppleIcon() {
-  return (
-    <svg width="17" height="19" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-    </svg>
-  )
-}
-
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -82,6 +74,8 @@ function SocialButton({
   )
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+
 export default function Step2Login({ onNext: _onNext }: Props) {
   return (
     <div style={{ ...screen, padding: '0 22px 36px' }}>
@@ -130,16 +124,7 @@ export default function Step2Login({ onNext: _onNext }: Props) {
           background="#FEE500"
           color="#191600"
           pressedBackground="#F4DB00"
-          onClick={() => { window.location.href = 'http://localhost:8080/oauth2/authorization/kakao' }}
-        />
-
-        <SocialButton
-          icon={<AppleIcon />}
-          label="Apple로 계속하기"
-          background="#16161A"
-          color="#FFFFFF"
-          pressedBackground="#0D0D10"
-          onClick={() => { window.location.href = 'http://localhost:8080/oauth2/authorization/apple' }}
+          onClick={() => { window.location.href = `${API_BASE}/oauth2/authorization/kakao` }}
         />
 
         <SocialButton
@@ -149,7 +134,7 @@ export default function Step2Login({ onNext: _onNext }: Props) {
           color="var(--text-normal)"
           border="1px solid var(--wds-line-strong)"
           pressedBackground="#F8F9FB"
-          onClick={() => { window.location.href = 'http://localhost:8080/oauth2/authorization/google' }}
+          onClick={() => { window.location.href = `${API_BASE}/oauth2/authorization/google` }}
         />
 
         <p
@@ -168,4 +153,3 @@ export default function Step2Login({ onNext: _onNext }: Props) {
     </div>
   )
 }
-

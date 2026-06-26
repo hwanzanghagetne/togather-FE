@@ -64,19 +64,6 @@ export default function Step1Splash({ onNext }: Props) {
         함께할 사람을 찾는 곳
       </div>
 
-      <div style={{ marginTop: 40, display: 'flex', gap: 6, alignItems: 'center' }}>
-        {[0, 1, 2].map((index) => (
-          <div
-            key={index}
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: 999,
-              background: index === 0 ? 'var(--primary)' : 'rgba(0,102,255,.3)',
-            }}
-          />
-        ))}
-      </div>
     </div>
   )
 }
