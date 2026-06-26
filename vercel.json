@@ -1,8 +1,8 @@
 {
   "buildCommand": "vite build",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://YOUR_BACKEND_URL/api/:path*" },
-    { "source": "/oauth2/:path*", "destination": "https://YOUR_BACKEND_URL/oauth2/:path*" },
-    { "source": "/login/:path*", "destination": "https://YOUR_BACKEND_URL/login/:path*" }
+    { "source": "/api/:path*", "destination": "https://port-0-togather-mqv0m8dfba5cae86.sel3.cloudtype.app/api/:path*" },
+    { "source": "/oauth2/:path*", "destination": "https://port-0-togather-mqv0m8dfba5cae86.sel3.cloudtype.app/oauth2/:path*" },
+    { "source": "/login/:path*", "destination": "https://port-0-togather-mqv0m8dfba5cae86.sel3.cloudtype.app/login/:path*" }
   ]
 }

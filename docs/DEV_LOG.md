@@ -24,3 +24,23 @@
 어떻게 확인했는지.
 
 -->
+
+## 2026-06-27 | Vercel OAuth 라우팅 및 PWA 아이콘 정리
+
+**배경**
+배포 환경에서 카카오 로그인 버튼이 백엔드 OAuth 주소로 연결되지 않았고, PWA manifest가 참조하는 기본 아이콘도 없어 브라우저 콘솔에 404가 발생했다.
+
+**해결 방법**
+`vercel.json`의 rewrite 목적지를 실제 Cloudtype 백엔드 주소로 연결했다. 추가로 `public/icon-192.png`, `public/icon-512.png`를 생성해 배포 환경에서 manifest 아이콘 경로가 비지 않도록 맞췄다.
+
+**트레이드오프**
+rewrite에 백엔드 주소를 직접 넣으면 배포 연결은 단순해지지만, 백엔드 주소가 바뀔 때 프론트 저장소에서도 함께 수정해야 한다. 반면 로그인 진입 경로와 `/api` 경로를 같은 기준으로 맞출 수 있어 운영상 추적은 쉬워진다.
+
+**변경 파일**
+- vercel.json
+- public/icon-192.png
+- public/icon-512.png
+
+**검증**
+- `npm.cmd run build`
+- rewrite 경로 및 아이콘 파일 존재 여부 확인
