@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api'
+import { GoogleMap, useJsApiLoader, OverlayView, Autocomplete } from '@react-google-maps/api'
 import { AlignJustify, Bell, ChevronRight, Plus, Search, Zap } from 'lucide-react'
+
+const LIBRARIES: ('places')[] = ['places']
 
 interface Meetup {
   id: number
@@ -132,9 +134,11 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('ALL')
   const [showList, setShowList] = useState(false)
   const mapRef = useRef<google.maps.Map | null>(null)
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
+    libraries: LIBRARIES,
   })
 
   useEffect(() => {
@@ -156,6 +160,16 @@ export default function HomePage() {
     mapRef.current = map
   }, [])
 
+  const onPlaceChanged = useCallback(() => {
+    const place = autocompleteRef.current?.getPlace()
+    if (!place?.geometry?.location) return
+    const lat = place.geometry.location.lat()
+    const lng = place.geometry.location.lng()
+    setCenter({ lat, lng })
+    mapRef.current?.panTo({ lat, lng })
+    mapRef.current?.setZoom(15)
+  }, [])
+
   const filtered = activeCategory === 'ALL'
     ? meetups
     : meetups.filter((m) => m.category === activeCategory)
@@ -164,9 +178,22 @@ export default function HomePage() {
     <div style={s.page}>
       {/* 검색 바 */}
       <div style={s.searchBar}>
-        <Search size={16} color="#9A9DA6" />
-        <span style={s.searchPlaceholder}>강남구 · 지금 근처</span>
-        <div style={{ position: 'relative' }}>
+        <Search size={16} color="#9A9DA6" style={{ flexShrink: 0 }} />
+        {isLoaded ? (
+          <Autocomplete
+            onLoad={(ac) => { autocompleteRef.current = ac }}
+            onPlaceChanged={onPlaceChanged}
+            options={{ fields: ['geometry', 'name'] }}
+          >
+            <input
+              style={s.searchInput}
+              placeholder="장소·모임 검색"
+            />
+          </Autocomplete>
+        ) : (
+          <span style={s.searchPlaceholder}>장소·모임 검색</span>
+        )}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
           <Bell size={18} color="#1a1a1a" strokeWidth={1.8} />
           <div style={s.notifDot} />
         </div>
@@ -378,6 +405,15 @@ const s: Record<string, React.CSSProperties> = {
     flex: 1,
     fontSize: 14,
     color: '#B0B3BC',
+  },
+  searchInput: {
+    flex: 1,
+    width: '100%',
+    border: 'none',
+    outline: 'none',
+    fontSize: 14,
+    color: '#1a1a1a',
+    background: 'transparent',
   },
   notifDot: {
     position: 'absolute',
