@@ -7,10 +7,10 @@ import MeetupPostedPage from './pages/MeetupPostedPage'
 import ChatRoomPage from './pages/ChatRoomPage'
 import ArrivePage from './pages/ArrivePage'
 import ReviewPage from './pages/ReviewPage'
+import MyPage from './pages/MyPage'
 import TabLayout from './components/TabLayout'
 
-// 하단 탭이 표시되는 경로
-const TAB_PATHS = ['/home', '/meetups', '/chats', '/my']
+const TAB_PATHS = ['/home', '/meetups', '/my']
 
 export default function App() {
   const location = useLocation()
@@ -21,8 +21,7 @@ export default function App() {
       <Routes>
         <Route path="/home" element={<HomePage />} />
         <Route path="/meetups" element={<MeetupListPage />} />
-        <Route path="/chats" element={<div style={{ padding: 24, color: '#9A9DA6' }}>채팅 목록 (준비 중)</div>} />
-        <Route path="/my" element={<div style={{ padding: 24, color: '#9A9DA6' }}>MY 페이지 (준비 중)</div>} />
+<Route path="/my" element={<MyPage />} />
       </Routes>
     </TabLayout>
   ) : (

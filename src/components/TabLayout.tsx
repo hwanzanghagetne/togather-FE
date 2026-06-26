@@ -1,11 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { List, Map, MessageCircle, User } from 'lucide-react'
+import { Home, Users, User } from 'lucide-react'
 
 const TABS = [
-  { label: '홈', icon: Map, path: '/home' },
-  { label: '모임', icon: List, path: '/meetups' },
-  { label: '채팅', icon: MessageCircle, path: '/chats' },
-  { label: 'MY', icon: User, path: '/my' },
+  { label: '홈', icon: Home, path: '/home' },
+  { label: '모임', icon: Users, path: '/meetups' },
+  { label: '마이', icon: User, path: '/my' },
 ]
 
 export default function TabLayout({ children }: { children: React.ReactNode }) {

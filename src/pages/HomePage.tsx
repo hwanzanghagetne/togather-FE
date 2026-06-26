@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api'
-import { Plus, Search, Zap } from 'lucide-react'
+import { AlignJustify, Bell, ChevronRight, Plus, Search, Zap } from 'lucide-react'
 
 interface Meetup {
   id: number
@@ -12,7 +12,10 @@ interface Meetup {
   currentCount: number
   maxParticipants: number
   status: string
+  address?: string
 }
+
+type CategoryFilter = 'ALL' | 'FOOD' | 'CAFE' | 'ACTIVITY' | 'SIGHTSEEING'
 
 const CATEGORY_COLOR: Record<string, string> = {
   FOOD: '#FF6B35',
@@ -30,31 +33,116 @@ const CATEGORY_EMOJI: Record<string, string> = {
   OTHER: '●',
 }
 
+const CHIPS: Array<{ key: CategoryFilter; label: string; emoji?: string }> = [
+  { key: 'ALL', label: '전체' },
+  { key: 'FOOD', label: '식사', emoji: '🍽' },
+  { key: 'CAFE', label: '카페·술', emoji: '☕' },
+  { key: 'ACTIVITY', label: '액티비티', emoji: '⚡' },
+]
+
 const MAP_STYLES = [
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
   { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
 ]
 
+function PinMarker({
+  color,
+  emoji,
+  count,
+  selected,
+  onClick,
+}: {
+  color: string
+  emoji: string
+  count: number
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        transform: 'translate(-50%, -100%)',
+        cursor: 'pointer',
+        position: 'relative',
+      }}
+      onClick={(e) => { e.stopPropagation(); onClick() }}
+    >
+      <div
+        style={{
+          width: selected ? 50 : 44,
+          height: selected ? 50 : 44,
+          borderRadius: 999,
+          background: color,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: selected ? `0 6px 20px ${color}60` : '0 4px 12px rgba(0,0,0,0.2)',
+          transition: 'all 150ms ease',
+          position: 'relative',
+        }}
+      >
+        <span style={{ fontSize: selected ? 18 : 16 }}>{emoji}</span>
+        {count > 1 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              minWidth: 18,
+              height: 18,
+              borderRadius: 999,
+              background: '#fff',
+              color: '#1a1a1a',
+              fontSize: 10,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1.5px solid rgba(0,0,0,0.1)',
+              padding: '0 3px',
+            }}
+          >
+            {count}
+          </div>
+        )}
+      </div>
+      <div
+        style={{
+          width: 0,
+          height: 0,
+          borderLeft: '7px solid transparent',
+          borderRight: '7px solid transparent',
+          borderTop: `9px solid ${color}`,
+          marginTop: -1,
+        }}
+      />
+    </div>
+  )
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
   const [meetups, setMeetups] = useState<Meetup[]>([])
   const [selected, setSelected] = useState<Meetup | null>(null)
   const [center, setCenter] = useState({ lat: 35.15, lng: 129.12 })
+  const [activeCategory, setActiveCategory] = useState<CategoryFilter>('ALL')
+  const [showList, setShowList] = useState(false)
   const mapRef = useRef<google.maps.Map | null>(null)
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
   })
 
-  // 내 위치
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition((pos) => {
       setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude })
     })
   }, [])
 
-  // 근처 모임 조회
   useEffect(() => {
     fetch(`/api/meetups/nearby?lat=${center.lat}&lng=${center.lng}&radius=10`, {
       credentials: 'include',
@@ -68,20 +156,49 @@ export default function HomePage() {
     mapRef.current = map
   }, [])
 
+  const filtered = activeCategory === 'ALL'
+    ? meetups
+    : meetups.filter((m) => m.category === activeCategory)
+
   return (
     <div style={s.page}>
       {/* 검색 바 */}
       <div style={s.searchBar}>
         <Search size={16} color="#9A9DA6" />
-        <span style={s.searchPlaceholder}>장소·모임 검색</span>
-        <div style={s.notifDot} />
+        <span style={s.searchPlaceholder}>강남구 · 지금 근처</span>
+        <div style={{ position: 'relative' }}>
+          <Bell size={18} color="#1a1a1a" strokeWidth={1.8} />
+          <div style={s.notifDot} />
+        </div>
+      </div>
+
+      {/* 카테고리 칩 */}
+      <div style={s.chips}>
+        {CHIPS.map((chip) => {
+          const active = activeCategory === chip.key
+          return (
+            <button
+              key={chip.key}
+              style={{
+                ...s.chip,
+                background: active ? 'var(--primary)' : '#fff',
+                color: active ? '#fff' : '#1a1a1a',
+                fontWeight: active ? 700 : 500,
+              }}
+              onClick={() => setActiveCategory(chip.key)}
+            >
+              {chip.emoji && <span style={{ fontSize: 13 }}>{chip.emoji}</span>}
+              {chip.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* 모임 수 배너 */}
-      {meetups.length > 0 && (
+      {filtered.length > 0 && (
         <div style={s.countBanner}>
           <Zap size={13} color="#FF6B35" fill="#FF6B35" />
-          지금 {meetups.length}개 모임 진행 중
+          지금 {filtered.length}개 모임 진행 중
         </div>
       )}
 
@@ -93,7 +210,7 @@ export default function HomePage() {
             center={center}
             zoom={15}
             onLoad={onMapLoad}
-            onClick={() => setSelected(null)}
+            onClick={() => { setSelected(null); setShowList(false) }}
             options={{
               styles: MAP_STYLES,
               disableDefaultUI: true,
@@ -101,31 +218,23 @@ export default function HomePage() {
               gestureHandling: 'greedy',
             }}
           >
-            {/* 내 위치 */}
             <OverlayView position={center} mapPaneName="overlayMouseTarget">
               <div style={s.myDot} />
             </OverlayView>
 
-            {/* 모임 마커 */}
-            {meetups.map((m) => (
+            {filtered.map((m) => (
               <OverlayView
                 key={m.id}
                 position={{ lat: m.latitude, lng: m.longitude }}
                 mapPaneName="overlayMouseTarget"
               >
-                <div
-                  style={{
-                    ...s.marker,
-                    background: CATEGORY_COLOR[m.category] ?? '#9A9DA6',
-                    transform: selected?.id === m.id ? 'scale(1.15)' : 'scale(1)',
-                  }}
-                  onClick={(e) => { e.stopPropagation(); setSelected(m) }}
-                >
-                  <span style={{ fontSize: 16 }}>{CATEGORY_EMOJI[m.category] ?? '●'}</span>
-                  {m.currentCount > 1 && (
-                    <div style={s.markerBadge}>{m.currentCount}</div>
-                  )}
-                </div>
+                <PinMarker
+                  color={CATEGORY_COLOR[m.category] ?? '#9A9DA6'}
+                  emoji={CATEGORY_EMOJI[m.category] ?? '●'}
+                  count={m.currentCount}
+                  selected={selected?.id === m.id}
+                  onClick={() => { setSelected(m); setShowList(false) }}
+                />
               </OverlayView>
             ))}
           </GoogleMap>
@@ -134,26 +243,110 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* 선택된 모임 카드 */}
+      {/* 선택된 모임 팝업 */}
       {selected && (
         <div style={s.popupCard} onClick={() => navigate(`/chat/${selected.id}`)}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={s.popupTitle}>{selected.title}</div>
-              <div style={s.popupMeta}>
-                {selected.currentCount} / {selected.maxParticipants}명 참여 중
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: (CATEGORY_COLOR[selected.category] ?? '#9A9DA6') + '22',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 22,
+                flexShrink: 0,
+              }}
+            >
+              {CATEGORY_EMOJI[selected.category] ?? '●'}
             </div>
-            <div style={{ ...s.popupCategoryDot, background: CATEGORY_COLOR[selected.category] ?? '#9A9DA6' }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                <span style={s.popupBadge}>지금 바로</span>
+                <span style={{ fontSize: 11.5, color: '#9A9DA6' }}>
+                  {selected.currentCount}/{selected.maxParticipants}명
+                </span>
+              </div>
+              <div style={s.popupTitle}>{selected.title}</div>
+              {selected.address && (
+                <div style={s.popupMeta}>{selected.address}</div>
+              )}
+            </div>
+            <ChevronRight size={18} color="#9A9DA6" />
           </div>
-          <div style={s.popupAction}>채팅 참가하기 →</div>
         </div>
       )}
 
-      {/* 번개 만들기 FAB */}
+      {/* 리스트 버튼 */}
+      {!showList && !selected && (
+        <button style={s.listBtn} onClick={() => setShowList(true)}>
+          <AlignJustify size={15} />
+          리스트
+        </button>
+      )}
+
+      {/* FAB */}
       <button style={s.fab} onClick={() => navigate('/meetups/new')}>
         <Plus size={22} color="#fff" strokeWidth={2.5} />
       </button>
+
+      {/* 리스트 바텀시트 */}
+      {showList && (
+        <>
+          <div style={s.sheetBackdrop} onClick={() => setShowList(false)} />
+          <div style={s.sheet}>
+            <div style={s.sheetHandle} />
+            <div style={s.sheetHeader}>
+              <span style={s.sheetTitle}>이 지역 모임 {filtered.length}개</span>
+              <button style={s.filterBtn}>필터</button>
+            </div>
+            <div style={s.sheetList}>
+              {filtered.length === 0 && (
+                <div style={s.sheetEmpty}>근처 모임이 없어요</div>
+              )}
+              {filtered.map((m) => (
+                <div
+                  key={m.id}
+                  style={s.sheetCard}
+                  onClick={() => navigate(`/chat/${m.id}`)}
+                >
+                  <div
+                    style={{
+                      ...s.sheetCardThumb,
+                      background: (CATEGORY_COLOR[m.category] ?? '#9A9DA6') + '22',
+                    }}
+                  >
+                    <span style={{ fontSize: 22 }}>{CATEGORY_EMOJI[m.category] ?? '●'}</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      <span
+                        style={{
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          color: 'var(--primary)',
+                          background: 'rgba(0,102,255,0.1)',
+                          borderRadius: 4,
+                          padding: '1px 5px',
+                        }}
+                      >
+                        지금 바로
+                      </span>
+                    </div>
+                    <div style={s.sheetCardTitle}>{m.title}</div>
+                    {m.address && (
+                      <div style={s.sheetCardMeta}>{m.address}</div>
+                    )}
+                  </div>
+                  <span style={s.sheetCardCount}>{m.currentCount}명</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -162,7 +355,7 @@ const s: Record<string, React.CSSProperties> = {
   page: {
     position: 'relative',
     width: '100%',
-    height: '100dvh',
+    height: '100%',
     overflow: 'hidden',
     background: '#EFF2F6',
   },
@@ -187,14 +380,38 @@ const s: Record<string, React.CSSProperties> = {
     color: '#B0B3BC',
   },
   notifDot: {
-    width: 8,
-    height: 8,
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 7,
+    height: 7,
     borderRadius: 999,
     background: '#FF3B30',
+    border: '1px solid #fff',
+  },
+  chips: {
+    position: 'absolute',
+    top: 72,
+    left: 16,
+    zIndex: 10,
+    display: 'flex',
+    gap: 8,
+  },
+  chip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '6px 13px',
+    borderRadius: 999,
+    border: 'none',
+    fontSize: 13,
+    cursor: 'pointer',
+    boxShadow: '0 1px 6px rgba(0,0,0,0.10)',
+    whiteSpace: 'nowrap',
   },
   countBanner: {
     position: 'absolute',
-    top: 72,
+    top: 124,
     left: '50%',
     transform: 'translateX(-50%)',
     zIndex: 10,
@@ -232,76 +449,69 @@ const s: Record<string, React.CSSProperties> = {
     boxShadow: '0 0 0 4px rgba(0,102,255,0.25)',
     transform: 'translate(-50%, -50%)',
   },
-  marker: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-    cursor: 'pointer',
-    transition: 'transform 150ms ease',
-    transform: 'translate(-50%, -50%)',
-    position: 'relative',
-  },
-  markerBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 18,
-    height: 18,
-    borderRadius: 999,
-    background: '#fff',
-    color: '#1a1a1a',
-    fontSize: 10,
-    fontWeight: 700,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: '1.5px solid rgba(0,0,0,0.1)',
-  },
   popupCard: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 96,
     left: 16,
     right: 16,
     zIndex: 10,
     background: '#fff',
     borderRadius: 16,
-    padding: '16px',
+    padding: '14px 16px',
     boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
     cursor: 'pointer',
+  },
+  popupBadge: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#fff',
+    background: '#FF6B35',
+    borderRadius: 4,
+    padding: '2px 6px',
   },
   popupTitle: {
     fontSize: 15,
     fontWeight: 700,
     color: '#1a1a1a',
-    marginBottom: 4,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   popupMeta: {
-    fontSize: 12.5,
+    marginTop: 2,
+    fontSize: 12,
     color: '#9A9DA6',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
-  popupCategoryDot: {
-    width: 10,
-    height: 10,
+  listBtn: {
+    position: 'absolute',
+    bottom: 90,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 10,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '10px 22px',
     borderRadius: 999,
-    marginTop: 4,
-  },
-  popupAction: {
-    marginTop: 10,
-    fontSize: 13,
+    background: '#fff',
+    border: 'none',
+    fontSize: 14,
     fontWeight: 600,
-    color: 'var(--primary)',
+    color: '#1a1a1a',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   fab: {
     position: 'absolute',
-    bottom: 100,
-    right: 20,
+    bottom: 84,
+    right: 16,
     zIndex: 10,
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: 999,
     background: 'var(--primary)',
     border: 'none',
@@ -310,5 +520,109 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     boxShadow: '0 4px 16px rgba(0,102,255,0.4)',
     cursor: 'pointer',
+  },
+  sheetBackdrop: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 20,
+    background: 'rgba(0,0,0,0.15)',
+  },
+  sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
+    background: '#fff',
+    borderRadius: '20px 20px 0 0',
+    maxHeight: '60%',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 -4px 24px rgba(0,0,0,0.10)',
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 999,
+    background: '#E0E2E8',
+    margin: '12px auto 0',
+    flexShrink: 0,
+  },
+  sheetHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '14px 20px 10px',
+    flexShrink: 0,
+  },
+  sheetTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: '#1a1a1a',
+  },
+  filterBtn: {
+    border: '1px solid #E0E2E8',
+    background: '#fff',
+    borderRadius: 8,
+    padding: '5px 12px',
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#3A3D46',
+    cursor: 'pointer',
+  },
+  sheetList: {
+    overflowY: 'auto',
+    padding: '0 16px 20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  sheetEmpty: {
+    textAlign: 'center',
+    padding: '32px 0',
+    fontSize: 14,
+    color: '#9A9DA6',
+  },
+  sheetCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '12px 14px',
+    borderRadius: 14,
+    background: '#F7F8FA',
+    cursor: 'pointer',
+  },
+  sheetCardThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  sheetCardTitle: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#1a1a1a',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  sheetCardMeta: {
+    fontSize: 11.5,
+    color: '#9A9DA6',
+    marginTop: 2,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  sheetCardRight: {
+    flexShrink: 0,
+  },
+  sheetCardCount: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#9A9DA6',
   },
 }
