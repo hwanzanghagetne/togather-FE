@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Globe } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { BrandLockup, screen } from './common'
 
 interface Props {
@@ -26,24 +26,12 @@ function GoogleIcon() {
 }
 
 function SocialButton({
-  icon,
-  label,
-  background,
-  color,
-  border = 'none',
-  pressedBackground,
-  onClick,
+  icon, label, background, color, border = 'none', pressedBg, onClick,
 }: {
-  icon: ReactNode
-  label: string
-  background: string
-  color: string
-  border?: string
-  pressedBackground?: string
-  onClick: () => void
+  icon: ReactNode; label: string; background: string; color: string
+  border?: string; pressedBg?: string; onClick: () => void
 }) {
   const [pressed, setPressed] = useState(false)
-
   return (
     <button
       onClick={onClick}
@@ -51,19 +39,11 @@ function SocialButton({
       onPointerUp={() => setPressed(false)}
       onPointerLeave={() => setPressed(false)}
       style={{
-        height: 50,
-        borderRadius: 13,
-        border,
-        background: pressed ? pressedBackground ?? background : background,
-        color,
-        fontSize: 15,
-        fontWeight: 600,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        cursor: 'pointer',
-        width: '100%',
+        height: 50, borderRadius: 13, border,
+        background: pressed ? (pressedBg ?? background) : background,
+        color, fontSize: 15, fontWeight: 600,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        cursor: 'pointer', width: '100%',
         transform: pressed ? 'scale(0.97)' : 'scale(1)',
         transition: 'transform 150ms cubic-bezier(0.4,0,0.2,1), background 150ms cubic-bezier(0.4,0,0.2,1)',
       }}
@@ -78,75 +58,105 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
 export default function Step2Login({ onNext: _onNext }: Props) {
   return (
-    <div style={{ ...screen, padding: '0 22px 36px' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 40 }}>
+    <div style={{ ...screen, background: '#fff' }}>
+      {/* 상단 영역 */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '52px 24px 0' }}>
         <BrandLockup />
 
-        <div
-          style={{
-            marginTop: 30,
-            fontFamily: 'var(--font-display)',
-            fontWeight: 700,
-            fontSize: 23,
-            lineHeight: 1.32,
-            textAlign: 'center',
-            color: 'var(--text-normal)',
-            letterSpacing: '-0.02em',
-          }}
-        >
+        <div style={{
+          marginTop: 28,
+          fontFamily: 'var(--font-display)',
+          fontWeight: 700,
+          fontSize: 24,
+          lineHeight: 1.32,
+          textAlign: 'center',
+          color: 'var(--text-normal)',
+          letterSpacing: '-0.025em',
+        }}>
           함께할 사람을 찾는
           <br />
           가장 따뜻한 방법
         </div>
 
-        <div
-          style={{
-            marginTop: 18,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 7,
-            background: 'var(--wds-fill-alt)',
-            borderRadius: 999,
-            padding: '9px 15px',
-          }}
-        >
-          <Globe size={16} color="var(--positive)" fill="var(--positive)" />
-          <span style={{ fontSize: 12.5, color: 'var(--text-neutral)', fontWeight: 500 }}>
-            <strong style={{ color: 'var(--text-normal)', fontWeight: 700 }}>1,240명</strong>이 지금 근처에서 활동 중
+        {/* 소셜 프루프 배지 */}
+        <div style={{
+          marginTop: 20,
+          display: 'inline-flex', alignItems: 'center', gap: 7,
+          background: 'var(--primary-tint)',
+          borderRadius: 999,
+          padding: '9px 16px',
+        }}>
+          <Users size={15} color="var(--primary)" strokeWidth={2.2} />
+          <span style={{ fontSize: 13, color: 'var(--text-neutral)', fontWeight: 500 }}>
+            <strong style={{ color: 'var(--primary)', fontWeight: 700 }}>1,240명</strong>이 지금 근처에서 활동 중
           </span>
+        </div>
+
+        {/* 일러스트 영역 — 지도 미리보기 느낌의 장식 */}
+        <div style={{
+          marginTop: 32,
+          width: '100%',
+          height: 180,
+          borderRadius: 20,
+          background: 'linear-gradient(135deg, #EDF8FB 0%, #D0F0F7 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          {/* 장식 원들 */}
+          <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: 999, background: 'rgba(22,169,196,.12)', top: 20, left: 30 }} />
+          <div style={{ position: 'absolute', width: 80, height: 80, borderRadius: 999, background: 'rgba(22,169,196,.15)', bottom: 10, right: 40 }} />
+          {/* 핀 마커 3개 */}
+          {[
+            { top: 40, left: '30%', bg: '#FF6B35', emoji: '🍽' },
+            { top: 60, left: '55%', bg: '#16A9C4', emoji: '⚡' },
+            { top: 90, left: '20%', bg: '#6541F2', emoji: '☕' },
+          ].map((p, i) => (
+            <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 999, background: p.bg, border: '2.5px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, boxShadow: '0 3px 8px rgba(0,0,0,.18)' }}>
+                {p.emoji}
+              </div>
+              <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: `6px solid ${p.bg}`, marginTop: -1 }} />
+            </div>
+          ))}
+          {/* 참여자 아바타 */}
+          <div style={{ position: 'absolute', bottom: 16, right: 20, display: 'flex' }}>
+            {['#FFD9C7', '#D7E4FF', '#D9F2DD'].map((bg, i) => (
+              <div key={i} style={{ width: 28, height: 28, borderRadius: 999, background: bg, border: '2px solid #fff', marginLeft: i === 0 ? 0 : -8, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>
+                {['S', '현', '유'][i]}
+              </div>
+            ))}
+            <div style={{ width: 28, height: 28, borderRadius: 999, background: 'var(--primary)', border: '2px solid #fff', marginLeft: -8, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              +9
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* 하단 버튼 영역 */}
+      <div style={{ padding: '20px 24px 36px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <SocialButton
           icon={<KakaoIcon />}
           label="카카오로 계속하기"
           background="#FEE500"
           color="#191600"
-          pressedBackground="#F4DB00"
+          pressedBg="#F4DB00"
           onClick={() => { window.location.href = `${API_BASE}/oauth2/authorization/kakao` }}
         />
-
         <SocialButton
           icon={<GoogleIcon />}
           label="Google로 계속하기"
-          background="#FFFFFF"
+          background="#fff"
           color="var(--text-normal)"
-          border="1px solid var(--wds-line-strong)"
-          pressedBackground="#F8F9FB"
+          border="1.5px solid var(--wds-line-strong)"
+          pressedBg="#F8F9FB"
           onClick={() => { window.location.href = `${API_BASE}/oauth2/authorization/google` }}
         />
-
-        <p
-          style={{
-            textAlign: 'center',
-            fontSize: 10.5,
-            color: 'var(--text-assistive)',
-            margin: '6px 0 0',
-            lineHeight: 1.5,
-          }}
-        >
-          계속하면 <span style={{ color: 'var(--text-secondary)', textDecoration: 'underline' }}>이용약관</span> 및{' '}
+        <p style={{ textAlign: 'center', fontSize: 10.5, color: 'var(--text-assistive)', margin: '4px 0 0', lineHeight: 1.5 }}>
+          계속하면{' '}
+          <span style={{ color: 'var(--text-secondary)', textDecoration: 'underline' }}>이용약관</span> 및{' '}
           <span style={{ color: 'var(--text-secondary)', textDecoration: 'underline' }}>개인정보처리방침</span>에 동의하게 돼요
         </p>
       </div>
