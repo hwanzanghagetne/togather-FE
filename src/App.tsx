@@ -9,6 +9,7 @@ import ArrivePage from './pages/ArrivePage'
 import ReviewPage from './pages/ReviewPage'
 import MyPage from './pages/MyPage'
 import TabLayout from './components/TabLayout'
+import RequireAuth from './components/RequireAuth'
 
 const TAB_PATHS = ['/home', '/meetups', '/my']
 
@@ -17,13 +18,15 @@ export default function App() {
   const showTabs = TAB_PATHS.some((p) => location.pathname === p)
 
   return showTabs ? (
-    <TabLayout>
-      <Routes>
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/meetups" element={<MeetupListPage />} />
-<Route path="/my" element={<MyPage />} />
-      </Routes>
-    </TabLayout>
+    <RequireAuth>
+      <TabLayout>
+        <Routes>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/meetups" element={<MeetupListPage />} />
+          <Route path="/my" element={<MyPage />} />
+        </Routes>
+      </TabLayout>
+    </RequireAuth>
   ) : (
     <Routes>
       <Route path="/" element={<OnboardingFlow />} />
