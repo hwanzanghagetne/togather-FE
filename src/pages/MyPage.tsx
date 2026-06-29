@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, LogOut, MapPin, User } from 'lucide-react'
+import { ChevronRight, Flag, LogOut, MapPin, Settings, User } from 'lucide-react'
 import { clearJoinedMeetups } from '../meetupSession'
 import { apiFetch } from '../api'
 
@@ -17,14 +17,13 @@ export default function MyPage() {
 
   useEffect(() => {
     apiFetch('/api/members/me')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => setMe(data))
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => setMe(d))
       .catch(() => {})
   }, [])
 
   const handleLogout = async () => {
     if (loggingOut) return
-
     setLoggingOut(true)
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' })
@@ -35,142 +34,152 @@ export default function MyPage() {
     }
   }
 
+  const initial = me?.nickname?.charAt(0) ?? '?'
+
   return (
     <div style={s.page}>
-      <div style={s.content}>
-        <div style={s.header}>마이</div>
+      <div style={s.scroll}>
+        <div style={s.pageHeader}>마이</div>
 
-        <section style={s.profileCard}>
+        {/* 프로필 카드 */}
+        <div style={s.profileCard}>
           <div style={s.avatar}>
-            <User size={20} />
+            {me ? (
+              <span style={s.avatarInitial}>{initial}</span>
+            ) : (
+              <User size={22} color="var(--primary)" />
+            )}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={s.name}>{me?.nickname || 'ToGather 사용자'}</div>
-            <div style={s.subtext}>{me?.email || '현재 로그인된 계정'}</div>
+            <div style={s.profileName}>{me?.nickname ?? 'ToGather 사용자'}</div>
+            <div style={s.profileEmail}>{me?.email ?? '로그인 중...'}</div>
           </div>
-        </section>
+          <button style={s.editBtn}>
+            <Settings size={16} color="var(--text-secondary)" />
+          </button>
+        </div>
 
-        <section style={s.infoCard}>
-          <div style={s.infoRow}>
-            <div style={s.infoLeft}>
-              <MapPin size={16} color="var(--primary)" />
-              <span>내 주변 모임 탐색</span>
+        {/* 매너온도 카드 */}
+        <div style={s.tempCard}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div>
+              <div style={s.tempLabel}>매너온도</div>
+              <div style={s.tempDesc}>모임에서 받은 평가가 반영돼요</div>
             </div>
-            <ChevronRight size={16} color="#9A9DA6" />
+            <div style={s.tempValue}>36.5°</div>
           </div>
-          <div style={s.infoCaption}>일단 기본 설정 페이지 대신, 필요한 기능부터 차근차근 붙여둘게요.</div>
-        </section>
-      </div>
+          <div style={s.gaugeTrack}>
+            <div style={s.gaugeFill} />
+            <div style={s.gaugeThumb} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+            <span style={s.gaugeEnd}>0°</span>
+            <span style={s.gaugeEnd}>100°</span>
+          </div>
+        </div>
 
-      <div style={s.footer}>
-        <button style={{ ...s.logoutButton, opacity: loggingOut ? 0.6 : 1 }} onClick={handleLogout} disabled={loggingOut}>
-          <LogOut size={18} />
+        {/* 통계 */}
+        <div style={s.statsRow}>
+          {[
+            { label: '참여한 모임', value: '0' },
+            { label: '만든 모임', value: '0' },
+            { label: '받은 평가', value: '0' },
+          ].map((stat) => (
+            <div key={stat.label} style={s.statItem}>
+              <div style={s.statValue}>{stat.value}</div>
+              <div style={s.statLabel}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 메뉴 */}
+        <div style={s.menuCard}>
+          {[
+            { icon: <MapPin size={17} color="var(--primary)" />, label: '내 주변 모임 탐색', sub: '지도로 이동', onClick: () => navigate('/home') },
+            { icon: <Flag size={17} color="var(--cautionary)" />, label: '안전센터', sub: '신고·차단 관리', onClick: undefined },
+          ].map((item, i, arr) => (
+            <button
+              key={item.label}
+              style={{ ...s.menuRow, borderBottom: i < arr.length - 1 ? '1px solid var(--wds-line)' : 'none' }}
+              onClick={item.onClick}
+            >
+              <div style={s.menuIcon}>{item.icon}</div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={s.menuLabel}>{item.label}</div>
+                <div style={s.menuSub}>{item.sub}</div>
+              </div>
+              <ChevronRight size={16} color="var(--text-placeholder)" />
+            </button>
+          ))}
+        </div>
+
+        {/* 로그아웃 */}
+        <button
+          style={{ ...s.logoutBtn, opacity: loggingOut ? 0.6 : 1 }}
+          onClick={handleLogout}
+          disabled={loggingOut}
+        >
+          <LogOut size={17} />
           {loggingOut ? '로그아웃 중...' : '로그아웃'}
         </button>
+
+        <div style={s.version}>ToGather v0.1.0</div>
       </div>
     </div>
   )
 }
 
+const GAUGE_PCT = 36.5
+
 const s: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100%',
-    background: '#F3F5F8',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  content: {
-    flex: 1,
-    padding: '24px 16px 20px',
-    maxWidth: 430,
-    width: '100%',
-    margin: '0 auto',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 700,
-    color: '#16161A',
-    marginBottom: 18,
-  },
+  page: { height: '100%', background: 'var(--wds-fill)', overflowY: 'auto' },
+  scroll: { maxWidth: 430, margin: '0 auto', padding: '20px 16px 36px', display: 'flex', flexDirection: 'column', gap: 12 },
+
+  pageHeader: { fontSize: 22, fontWeight: 700, color: 'var(--text-normal)', letterSpacing: '-0.02em', marginBottom: 4 },
+
   profileCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 14,
-    padding: '18px 16px',
-    borderRadius: 18,
-    background: '#fff',
-    boxShadow: '0 4px 12px rgba(15,20,30,0.05)',
+    display: 'flex', alignItems: 'center', gap: 14,
+    padding: '18px 16px', borderRadius: 20, background: '#fff',
+    boxShadow: 'var(--shadow-card)',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 999,
-    background: 'rgba(22,169,196,0.1)',
-    color: 'var(--primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+    width: 52, height: 52, borderRadius: 999,
+    background: 'var(--primary-tint)', color: 'var(--primary)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  name: {
-    fontSize: 16,
-    fontWeight: 700,
-    color: '#16161A',
+  avatarInitial: { fontSize: 20, fontWeight: 700, color: 'var(--primary)' },
+  profileName: { fontSize: 17, fontWeight: 700, color: 'var(--text-normal)' },
+  profileEmail: { marginTop: 3, fontSize: 12.5, color: 'var(--text-assistive)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  editBtn: { width: 36, height: 36, borderRadius: 10, border: '1px solid var(--wds-line)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 },
+
+  tempCard: { padding: '18px 16px', borderRadius: 20, background: '#fff', boxShadow: 'var(--shadow-card)' },
+  tempLabel: { fontSize: 15, fontWeight: 700, color: 'var(--text-normal)' },
+  tempDesc: { marginTop: 2, fontSize: 12, color: 'var(--text-assistive)' },
+  tempValue: { fontSize: 28, fontWeight: 700, color: 'var(--primary)', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' },
+  gaugeTrack: { height: 8, borderRadius: 999, background: 'var(--wds-fill)', position: 'relative' },
+  gaugeFill: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${GAUGE_PCT}%`, borderRadius: 999, background: 'linear-gradient(90deg, #16A9C4, #1192AC)' },
+  gaugeThumb: { position: 'absolute', top: '50%', left: `${GAUGE_PCT}%`, transform: 'translate(-50%, -50%)', width: 16, height: 16, borderRadius: 999, background: '#fff', border: '2.5px solid var(--primary)', boxShadow: '0 2px 6px rgba(22,169,196,.3)' },
+  gaugeEnd: { fontSize: 11, color: 'var(--text-assistive)' },
+
+  statsRow: { display: 'flex', gap: 10 },
+  statItem: { flex: 1, padding: '16px 0', borderRadius: 16, background: '#fff', textAlign: 'center', boxShadow: 'var(--shadow-card)' },
+  statValue: { fontSize: 22, fontWeight: 700, color: 'var(--text-normal)', letterSpacing: '-0.02em' },
+  statLabel: { marginTop: 3, fontSize: 11, color: 'var(--text-assistive)', fontWeight: 500 },
+
+  menuCard: { borderRadius: 20, background: '#fff', overflow: 'hidden', boxShadow: 'var(--shadow-card)' },
+  menuRow: {
+    width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+    padding: '14px 16px', border: 'none', background: 'transparent', cursor: 'pointer',
   },
-  subtext: {
-    marginTop: 4,
-    fontSize: 12.5,
-    color: '#8A8E97',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
+  menuIcon: { width: 34, height: 34, borderRadius: 10, background: 'var(--wds-fill)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  menuLabel: { fontSize: 14, fontWeight: 600, color: 'var(--text-normal)' },
+  menuSub: { marginTop: 2, fontSize: 12, color: 'var(--text-assistive)' },
+
+  logoutBtn: {
+    width: '100%', height: 50, borderRadius: 14, border: 'none',
+    background: 'var(--wds-fill)', color: 'var(--text-secondary)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    fontSize: 14, fontWeight: 700, cursor: 'pointer',
   },
-  infoCard: {
-    marginTop: 14,
-    padding: '16px',
-    borderRadius: 18,
-    background: '#fff',
-    boxShadow: '0 4px 12px rgba(15,20,30,0.05)',
-  },
-  infoRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  infoLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    fontSize: 14,
-    fontWeight: 600,
-    color: '#16161A',
-  },
-  infoCaption: {
-    marginTop: 10,
-    fontSize: 12.5,
-    lineHeight: 1.5,
-    color: '#8A8E97',
-  },
-  footer: {
-    padding: '12px 16px 30px',
-    maxWidth: 430,
-    width: '100%',
-    margin: '0 auto',
-  },
-  logoutButton: {
-    width: '100%',
-    height: 52,
-    borderRadius: 14,
-    border: 'none',
-    background: '#16161A',
-    color: '#fff',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    fontSize: 15,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
+  version: { textAlign: 'center', fontSize: 11, color: 'var(--text-placeholder)', marginTop: 4 },
 }

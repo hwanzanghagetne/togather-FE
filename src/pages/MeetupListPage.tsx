@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, List, MapPin, MessageCircle, Plus, Users, Zap } from 'lucide-react'
+import { MessageCircle, Plus, Users, Zap } from 'lucide-react'
 import { markJoinedMeetup, markLeftMeetup, readJoinedMeetupIds } from '../meetupSession'
 import { apiFetch } from '../api'
 
@@ -19,37 +19,19 @@ interface Meetup {
   expiresAt: string
 }
 
-const CATEGORY_META: Record<string, { color: string; label: string }> = {
-  FOOD: { color: '#FF6B35', label: '식사' },
-  CAFE: { color: '#8B5CF6', label: '카페·술' },
-  ACTIVITY: { color: '#00973A', label: '액티비티' },
-  SIGHTSEEING: { color: '#00A3A3', label: '관광' },
-  OTHER: { color: '#9A9DA6', label: '기타' },
-}
-
-function formatDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const toRad = (value: number) => (value * Math.PI) / 180
-  const earthRadius = 6371e3
-  const dLat = toRad(lat2 - lat1)
-  const dLng = toRad(lng2 - lng1)
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-
-  const meters = earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  if (meters < 1000) return `${Math.round(meters)}m`
-  return `${(meters / 1000).toFixed(1)}km`
+const CAT: Record<string, { color: string; emoji: string; label: string }> = {
+  FOOD:       { color: '#FF6B35', emoji: '🍽', label: '식사' },
+  CAFE:       { color: '#6541F2', emoji: '☕', label: '카페·술' },
+  ACTIVITY:   { color: '#16A9C4', emoji: '⚡', label: '액티비티' },
+  SIGHTSEEING:{ color: '#00973A', emoji: '📍', label: '관광' },
+  OTHER:      { color: '#9A9DA6', emoji: '●', label: '기타' },
 }
 
 function formatDeadline(expiresAt: string) {
   if (!expiresAt) return '오늘 중'
-
-  const date = new Date(expiresAt)
-  if (Number.isNaN(date.getTime())) return '오늘 중'
-
-  const hours = `${date.getHours()}`.padStart(2, '0')
-  const minutes = `${date.getMinutes()}`.padStart(2, '0')
-  return `${hours}:${minutes}까지`
+  const d = new Date(expiresAt)
+  if (Number.isNaN(d.getTime())) return '오늘 중'
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}까지`
 }
 
 export default function MeetupListPage() {
@@ -58,460 +40,305 @@ export default function MeetupListPage() {
   const [loading, setLoading] = useState(true)
   const [myId, setMyId] = useState<number | null>(null)
   const [pendingId, setPendingId] = useState<number | null>(null)
-  const [position, setPosition] = useState({ lat: 35.1796, lng: 129.0756 })
-  const [joinedMeetupIds, setJoinedMeetupIds] = useState<number[]>(() => readJoinedMeetupIds())
+  const [pos, setPos] = useState({ lat: 35.1796, lng: 129.0756 })
+  const [joinedIds, setJoinedIds] = useState<number[]>(() => readJoinedMeetupIds())
 
   useEffect(() => {
     apiFetch('/api/members/me')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => setMyId(data?.id ?? null))
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => setMyId(d?.id ?? null))
       .catch(() => {})
   }, [])
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
-      (coords) => setPosition({ lat: coords.coords.latitude, lng: coords.coords.longitude }),
-      () => {},
-      { enableHighAccuracy: true },
+      (c) => setPos({ lat: c.coords.latitude, lng: c.coords.longitude }),
+      () => {}, { enableHighAccuracy: true },
     )
   }, [])
 
-  const fetchMeetups = useCallback(async (nextPosition = position) => {
+  const fetchMeetups = useCallback(async (p = pos) => {
     setLoading(true)
-
     try {
-      const response = await apiFetch(`/api/meetups/nearby?lat=${nextPosition.lat}&lng=${nextPosition.lng}&radius=10`)
-
-      if (response.status === 401) {
-        navigate('/')
-        return
-      }
-
-      if (!response.ok) return
-
-      const data: Meetup[] = await response.json()
-      setMeetups(data)
+      const r = await apiFetch(`/api/meetups/nearby?lat=${p.lat}&lng=${p.lng}&radius=10`)
+      if (r.status === 401) { navigate('/'); return }
+      if (!r.ok) return
+      setMeetups(await r.json())
     } finally {
       setLoading(false)
     }
-  }, [navigate, position])
+  }, [navigate, pos])
 
-  useEffect(() => {
-    fetchMeetups(position)
-  }, [fetchMeetups, position])
-
-  const syncJoinedState = (meetupId: number, joined: boolean) => {
-    if (joined) {
-      markJoinedMeetup(meetupId)
-      setJoinedMeetupIds((prev) => [...new Set([...prev, meetupId])])
-      return
-    }
-
-    markLeftMeetup(meetupId)
-    setJoinedMeetupIds((prev) => prev.filter((id) => id !== meetupId))
-  }
+  useEffect(() => { fetchMeetups(pos) }, [fetchMeetups, pos])
 
   const handleJoin = async (meetupId: number) => {
     setPendingId(meetupId)
     try {
-      const response = await apiFetch(`/api/meetups/${meetupId}/join`, { method: 'POST' })
-
-      if (!response.ok) return
-
-      syncJoinedState(meetupId, true)
+      const r = await apiFetch(`/api/meetups/${meetupId}/join`, { method: 'POST' })
+      if (!r.ok) return
+      markJoinedMeetup(meetupId)
+      setJoinedIds((prev) => [...new Set([...prev, meetupId])])
       await fetchMeetups()
       navigate(`/chat/${meetupId}`)
-    } finally {
-      setPendingId(null)
-    }
+    } finally { setPendingId(null) }
   }
 
   const handleLeave = async (meetupId: number) => {
     setPendingId(meetupId)
     try {
-      const response = await apiFetch(`/api/meetups/${meetupId}/join`, { method: 'DELETE' })
-
-      if (!response.ok) return
-
-      syncJoinedState(meetupId, false)
+      const r = await apiFetch(`/api/meetups/${meetupId}/join`, { method: 'DELETE' })
+      if (!r.ok) return
+      markLeftMeetup(meetupId)
+      setJoinedIds((prev) => prev.filter((id) => id !== meetupId))
       await fetchMeetups()
-    } finally {
-      setPendingId(null)
-    }
+    } finally { setPendingId(null) }
   }
 
-  const cards = useMemo(() => {
-    return meetups.map((meetup) => {
-      const category = CATEGORY_META[meetup.category] ?? CATEGORY_META.OTHER
-      const joined = joinedMeetupIds.includes(meetup.id) || meetup.hostId === myId
+  const cards = useMemo(() => meetups.map((m) => ({
+    ...m,
+    cat: CAT[m.category] ?? CAT.OTHER,
+    joined: joinedIds.includes(m.id) || m.hostId === myId,
+    isHost: m.hostId === myId,
+    deadline: formatDeadline(m.expiresAt),
+  })), [meetups, joinedIds, myId])
 
-      return {
-        ...meetup,
-        category,
-        joined,
-        distance: formatDistance(position.lat, position.lng, meetup.latitude, meetup.longitude),
-        deadline: formatDeadline(meetup.expiresAt),
-      }
-    })
-  }, [joinedMeetupIds, meetups, myId, position.lat, position.lng])
+  const joinedCards = cards.filter((c) => c.joined)
+  const nearbyCards = cards.filter((c) => !c.joined)
 
   return (
     <div style={s.page}>
-      <div style={s.sheet}>
-        <div style={s.handle} />
-
-        <header style={s.header}>
-          <button style={s.backButton} onClick={() => navigate('/home')}>
-            <ChevronLeft size={20} />
-          </button>
-          <div>
-            <div style={s.headerTitle}>지금 근처 모임</div>
-            <div style={s.headerSub}>지도에서 바로 참여할 수 있는 모임이에요</div>
-          </div>
-          <button style={s.createButton} onClick={() => navigate('/meetups/new')}>
-            <Plus size={16} />
-            만들기
-          </button>
-        </header>
-
-        <div style={s.countBanner}>
-          <Zap size={14} color="#FFC247" fill="#FFC247" />
-          {loading ? '불러오는 중...' : `${meetups.length}개의 모임이 근처에 있어요`}
+      {/* 헤더 */}
+      <div style={s.header}>
+        <div>
+          <div style={s.title}>모임</div>
+          <div style={s.sub}>근처에서 열린 즉석 모임이에요</div>
         </div>
-
-        <div style={s.content}>
-          {loading ? (
-            <div style={s.emptyState}>목록을 불러오는 중이에요...</div>
-          ) : cards.length === 0 ? (
-            <div style={s.emptyCard}>
-              <div style={s.emptyIcon}>⚡</div>
-              <div style={s.emptyTitle}>지금 열려 있는 모임이 없어요</div>
-              <div style={s.emptyDescription}>첫 번째 모임을 열면 바로 지도에 노출돼요.</div>
-              <button style={s.emptyButton} onClick={() => navigate('/meetups/new')}>
-                새 모임 만들기
-              </button>
-            </div>
-          ) : (
-            <div style={s.list}>
-              {cards.map((meetup) => (
-                <div key={meetup.id} style={s.card}>
-                  <div style={s.cardTop}>
-                    <span style={{ ...s.categoryBadge, color: meetup.category.color, background: `${meetup.category.color}12` }}>
-                      {meetup.category.label}
-                    </span>
-                    <span style={s.deadlineText}>{meetup.deadline}</span>
-                  </div>
-
-                  <div style={s.cardTitle}>{meetup.title}</div>
-
-                  <div style={s.metaRow}>
-                    <MapPin size={13} color="#9A9DA6" />
-                    <span>{meetup.address || '근처 지역만 표시'}</span>
-                    <span style={s.dot}>·</span>
-                    <span>{meetup.distance}</span>
-                    <span style={s.dot}>·</span>
-                    <span>{meetup.hostNickname}</span>
-                  </div>
-
-                  <div style={s.bottomRow}>
-                    <div style={s.peopleRow}>
-                      <Users size={14} color="#5A5D66" />
-                      <span style={s.peopleText}>{meetup.currentCount}명 가는 중</span>
-                    </div>
-
-                    {meetup.joined ? (
-                      <div style={s.actionRow}>
-                        <button style={s.chatButton} onClick={() => navigate(`/chat/${meetup.id}`)}>
-                          <MessageCircle size={14} />
-                          채팅 열기
-                        </button>
-                        <button
-                          style={{ ...s.leaveButton, opacity: pendingId === meetup.id ? 0.6 : 1 }}
-                          onClick={() => handleLeave(meetup.id)}
-                          disabled={pendingId === meetup.id}
-                        >
-                          나가기
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        style={{ ...s.joinButton, opacity: pendingId === meetup.id || meetup.status !== 'OPEN' ? 0.6 : 1 }}
-                        onClick={() => handleJoin(meetup.id)}
-                        disabled={pendingId === meetup.id || meetup.status !== 'OPEN'}
-                      >
-                        <MessageCircle size={14} />
-                        {meetup.status === 'OPEN' ? '채팅 참여하기' : '마감됨'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <button style={s.mapButton} onClick={() => navigate('/home')}>
-          <List size={17} />
-          지도로 돌아가기
+        <button style={s.createBtn} onClick={() => navigate('/meetups/new')}>
+          <Plus size={16} strokeWidth={2.5} />
+          만들기
         </button>
+      </div>
+
+      <div style={s.scroll}>
+        {loading ? (
+          <div style={s.loadingWrap}>
+            <div style={s.loadingDot} />
+            <span style={s.loadingText}>모임 불러오는 중...</span>
+          </div>
+        ) : cards.length === 0 ? (
+          /* 빈 상태 */
+          <div style={s.emptyWrap}>
+            <div style={s.emptyIcon}>⚡</div>
+            <div style={s.emptyTitle}>지금 열려 있는 모임이 없어요</div>
+            <div style={s.emptyDesc}>첫 번째 모임을 만들면 바로 지도에 노출돼요</div>
+            <button style={s.emptyBtn} onClick={() => navigate('/meetups/new')}>
+              새 모임 만들기
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* 참여중 섹션 */}
+            {joinedCards.length > 0 && (
+              <section style={s.section}>
+                <div style={s.sectionLabel}>
+                  <span style={s.sectionDot} />
+                  참여중 {joinedCards.length}개
+                </div>
+                {joinedCards.map((m) => (
+                  <MeetupCard
+                    key={m.id}
+                    meetup={m}
+                    onChat={() => navigate(`/chat/${m.id}`)}
+                    onLeave={() => handleLeave(m.id)}
+                    pending={pendingId === m.id}
+                  />
+                ))}
+              </section>
+            )}
+
+            {/* 근처 모임 섹션 */}
+            {nearbyCards.length > 0 && (
+              <section style={s.section}>
+                <div style={s.sectionLabel}>
+                  <Zap size={13} color="#FF6B35" fill="#FF6B35" />
+                  지금 근처 {nearbyCards.length}개
+                </div>
+                {nearbyCards.map((m) => (
+                  <MeetupCard
+                    key={m.id}
+                    meetup={m}
+                    onJoin={() => handleJoin(m.id)}
+                    pending={pendingId === m.id}
+                  />
+                ))}
+              </section>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
 }
 
+function MeetupCard({
+  meetup, onJoin, onChat, onLeave, pending,
+}: {
+  meetup: ReturnType<typeof buildCard>
+  onJoin?: () => void
+  onChat?: () => void
+  onLeave?: () => void
+  pending: boolean
+}) {
+  return (
+    <div style={s.card}>
+      {/* 카테고리 아이콘 + 제목 */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{
+          width: 46, height: 46, borderRadius: 13, flexShrink: 0,
+          background: meetup.cat.color + '18',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 22,
+        }}>
+          {meetup.cat.emoji}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, paddingTop: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <span style={{ ...s.catBadge, color: meetup.cat.color, background: meetup.cat.color + '14' }}>
+              {meetup.cat.label}
+            </span>
+            {meetup.isHost && (
+              <span style={s.hostBadge}>👑 방장</span>
+            )}
+            {meetup.joined && !meetup.isHost && (
+              <span style={s.joinedBadge}>참여중</span>
+            )}
+            <span style={s.deadline}>{meetup.deadline}</span>
+          </div>
+          <div style={s.cardTitle}>{meetup.title}</div>
+          <div style={s.cardMeta}>
+            <Users size={12} color="var(--text-assistive)" />
+            <span>{meetup.currentCount}명 가는 중</span>
+            {meetup.address && (
+              <>
+                <span style={{ color: 'var(--wds-line-strong)' }}>·</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
+                  {meetup.address}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 액션 버튼 */}
+      <div style={{ marginTop: 14, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        {meetup.joined ? (
+          <>
+            <button
+              style={s.leaveBtn}
+              onClick={onLeave}
+              disabled={pending}
+            >
+              나가기
+            </button>
+            <button style={s.chatBtn} onClick={onChat}>
+              <MessageCircle size={14} strokeWidth={2.2} />
+              채팅 열기
+            </button>
+          </>
+        ) : (
+          <button
+            style={{ ...s.joinBtn, opacity: pending || meetup.status !== 'OPEN' ? 0.6 : 1 }}
+            onClick={onJoin}
+            disabled={pending || meetup.status !== 'OPEN'}
+          >
+            <MessageCircle size={14} strokeWidth={2.2} />
+            {meetup.status === 'OPEN' ? '채팅 참여하기' : '마감됨'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+type buildCard = ReturnType<typeof Array.prototype.map> extends Array<infer T> ? T : never
+
 const s: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100dvh',
-    background: '#E9EEF4',
-    padding: '10px 0 0',
-  },
-  sheet: {
-    minHeight: 'calc(100dvh - 10px)',
-    maxWidth: 430,
-    margin: '0 auto',
-    background: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: '0 -6px 20px rgba(0,0,0,0.08)',
-  },
-  handle: {
-    width: 42,
-    height: 4,
-    borderRadius: 999,
-    background: '#D8DCE6',
-    margin: '10px auto 4px',
-  },
+  page: { height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--wds-fill)' },
+
   header: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '12px 16px 10px',
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    border: 'none',
-    background: 'var(--wds-fill-alt)',
-    color: '#16161A',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
+    padding: '20px 20px 14px',
+    background: '#fff',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    borderBottom: '1px solid var(--wds-line)',
     flexShrink: 0,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: 700,
-    color: '#16161A',
+  title: { fontSize: 22, fontWeight: 700, color: 'var(--text-normal)', letterSpacing: '-0.02em' },
+  sub: { marginTop: 3, fontSize: 12.5, color: 'var(--text-assistive)' },
+  createBtn: {
+    height: 36, borderRadius: 999, border: 'none',
+    background: 'var(--primary)', color: '#fff',
+    padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: 5,
+    fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
   },
-  headerSub: {
-    marginTop: 3,
-    fontSize: 12,
-    color: '#8A8E97',
+
+  scroll: { flex: 1, overflowY: 'auto', padding: '16px 16px 24px', display: 'flex', flexDirection: 'column', gap: 0 },
+
+  loadingWrap: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, paddingTop: 80 },
+  loadingDot: { width: 36, height: 36, borderRadius: 999, background: 'var(--primary-tint)', animation: 'pulse 1.5s infinite' },
+  loadingText: { fontSize: 14, color: 'var(--text-assistive)' },
+
+  emptyWrap: { paddingTop: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 0 },
+  emptyIcon: { fontSize: 40 },
+  emptyTitle: { marginTop: 12, fontSize: 17, fontWeight: 700, color: 'var(--text-normal)' },
+  emptyDesc: { marginTop: 6, fontSize: 13.5, color: 'var(--text-assistive)', lineHeight: 1.5 },
+  emptyBtn: {
+    marginTop: 20, height: 46, borderRadius: 999, border: 'none',
+    background: 'var(--primary)', color: '#fff', padding: '0 22px',
+    fontSize: 14, fontWeight: 700, cursor: 'pointer',
   },
-  createButton: {
-    marginLeft: 'auto',
-    height: 36,
-    borderRadius: 999,
-    border: 'none',
-    background: 'var(--primary)',
-    color: '#fff',
-    padding: '0 14px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 5,
-    fontSize: 12.5,
-    fontWeight: 700,
-    cursor: 'pointer',
-    flexShrink: 0,
+
+  section: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 },
+  sectionLabel: {
+    display: 'flex', alignItems: 'center', gap: 6,
+    fontSize: 12.5, fontWeight: 700, color: 'var(--text-secondary)',
+    marginBottom: 4, paddingLeft: 2,
   },
-  countBanner: {
-    margin: '4px 16px 0',
-    borderRadius: 999,
-    background: '#16161A',
-    color: '#fff',
-    padding: '9px 14px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    fontSize: 12.5,
-    fontWeight: 600,
-    alignSelf: 'flex-start',
-  },
-  content: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '16px 16px 20px',
-  },
-  list: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-  },
+  sectionDot: { width: 8, height: 8, borderRadius: 999, background: 'var(--positive)', display: 'inline-block' },
+
   card: {
-    borderRadius: 18,
+    background: '#fff', borderRadius: 18,
     border: '1px solid var(--wds-line)',
-    background: '#fff',
     padding: '16px',
-    boxShadow: '0 4px 12px rgba(15,20,30,0.04)',
+    boxShadow: 'var(--shadow-card)',
   },
-  cardTop: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
+
+  catBadge: {
+    fontSize: 11.5, fontWeight: 700, borderRadius: 6, padding: '2px 7px',
+    display: 'inline-flex', alignItems: 'center',
   },
-  categoryBadge: {
-    height: 28,
-    borderRadius: 999,
-    padding: '0 10px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    fontSize: 12,
-    fontWeight: 700,
+  hostBadge: { fontSize: 11, fontWeight: 600, color: '#FF9200', background: 'rgba(255,146,0,.1)', borderRadius: 6, padding: '2px 6px' },
+  joinedBadge: { fontSize: 11, fontWeight: 700, color: 'var(--positive-dark)', background: 'rgba(0,151,58,.1)', borderRadius: 6, padding: '2px 6px' },
+  deadline: { marginLeft: 'auto', fontSize: 11.5, color: 'var(--text-assistive)', fontWeight: 500 },
+
+  cardTitle: { fontSize: 15, fontWeight: 700, color: 'var(--text-normal)', lineHeight: 1.35 },
+  cardMeta: { marginTop: 5, display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-assistive)' },
+
+  chatBtn: {
+    height: 38, borderRadius: 999, border: 'none',
+    background: 'var(--primary)', color: '#fff',
+    padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: 6,
+    fontSize: 13, fontWeight: 700, cursor: 'pointer',
   },
-  deadlineText: {
-    fontSize: 12,
-    color: '#8A8E97',
-    fontWeight: 600,
+  joinBtn: {
+    height: 38, borderRadius: 999, border: 'none',
+    background: 'var(--primary)', color: '#fff',
+    padding: '0 15px', display: 'inline-flex', alignItems: 'center', gap: 6,
+    fontSize: 13, fontWeight: 700, cursor: 'pointer',
   },
-  cardTitle: {
-    marginTop: 12,
-    fontSize: 17,
-    fontWeight: 700,
-    color: '#16161A',
-    lineHeight: 1.35,
-  },
-  metaRow: {
-    marginTop: 8,
-    display: 'flex',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-    fontSize: 12.5,
-    color: '#8A8E97',
-  },
-  dot: {
-    color: '#C8CAD0',
-    margin: '0 2px',
-  },
-  bottomRow: {
-    marginTop: 14,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  peopleRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-  },
-  peopleText: {
-    fontSize: 13,
-    fontWeight: 700,
-    color: '#5A5D66',
-  },
-  actionRow: {
-    display: 'flex',
-    gap: 8,
-  },
-  chatButton: {
-    height: 40,
-    borderRadius: 999,
-    border: 'none',
-    background: 'var(--primary)',
-    color: '#fff',
-    padding: '0 14px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    fontSize: 12.5,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  leaveButton: {
-    height: 40,
-    borderRadius: 999,
-    border: 'none',
-    background: 'rgba(255,66,66,0.08)',
-    color: '#FF4242',
-    padding: '0 14px',
-    fontSize: 12.5,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  joinButton: {
-    height: 40,
-    borderRadius: 999,
-    border: 'none',
-    background: 'var(--primary)',
-    color: '#fff',
-    padding: '0 15px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    fontSize: 12.5,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  emptyState: {
-    marginTop: 72,
-    textAlign: 'center',
-    color: '#8A8E97',
-    fontSize: 14,
-  },
-  emptyCard: {
-    marginTop: 56,
-    borderRadius: 18,
-    border: '1px dashed #D8DCE6',
-    background: '#FBFCFD',
-    padding: '28px 20px',
-    textAlign: 'center',
-  },
-  emptyIcon: {
-    fontSize: 34,
-  },
-  emptyTitle: {
-    marginTop: 10,
-    fontSize: 17,
-    fontWeight: 700,
-    color: '#16161A',
-  },
-  emptyDescription: {
-    marginTop: 6,
-    fontSize: 13,
-    color: '#8A8E97',
-    lineHeight: 1.5,
-  },
-  emptyButton: {
-    marginTop: 14,
-    height: 44,
-    borderRadius: 999,
-    border: 'none',
-    background: 'var(--primary)',
-    color: '#fff',
-    padding: '0 20px',
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  mapButton: {
-    margin: '0 16px 16px',
-    height: 48,
-    borderRadius: 14,
-    border: '1px solid var(--wds-line)',
-    background: '#fff',
-    color: '#16161A',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: 'pointer',
+  leaveBtn: {
+    height: 38, borderRadius: 999, border: 'none',
+    background: 'rgba(255,66,66,.08)', color: 'var(--negative)',
+    padding: '0 13px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
   },
 }
