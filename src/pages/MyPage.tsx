@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, LogOut, MapPin, User } from 'lucide-react'
 import { clearJoinedMeetups } from '../meetupSession'
+import { apiFetch } from '../api'
 
 interface Me {
   id: number
@@ -15,7 +16,7 @@ export default function MyPage() {
   const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => {
-    fetch('/api/members/me', { credentials: 'include' })
+    apiFetch('/api/members/me')
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => setMe(data))
       .catch(() => {})
@@ -26,10 +27,7 @@ export default function MyPage() {
 
     setLoggingOut(true)
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      })
+      await apiFetch('/api/auth/logout', { method: 'POST' })
     } finally {
       clearJoinedMeetups()
       navigate('/', { replace: true })

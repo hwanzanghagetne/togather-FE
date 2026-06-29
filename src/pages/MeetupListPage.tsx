@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, List, MapPin, MessageCircle, Plus, Users, Zap } from 'lucide-react'
 import { markJoinedMeetup, markLeftMeetup, readJoinedMeetupIds } from '../meetupSession'
+import { apiFetch } from '../api'
 
 interface Meetup {
   id: number
@@ -61,7 +62,7 @@ export default function MeetupListPage() {
   const [joinedMeetupIds, setJoinedMeetupIds] = useState<number[]>(() => readJoinedMeetupIds())
 
   useEffect(() => {
-    fetch('/api/members/me', { credentials: 'include' })
+    apiFetch('/api/members/me')
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => setMyId(data?.id ?? null))
       .catch(() => {})
@@ -79,9 +80,7 @@ export default function MeetupListPage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/meetups/nearby?lat=${nextPosition.lat}&lng=${nextPosition.lng}&radius=10`, {
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/meetups/nearby?lat=${nextPosition.lat}&lng=${nextPosition.lng}&radius=10`)
 
       if (response.status === 401) {
         navigate('/')
@@ -115,10 +114,7 @@ export default function MeetupListPage() {
   const handleJoin = async (meetupId: number) => {
     setPendingId(meetupId)
     try {
-      const response = await fetch(`/api/meetups/${meetupId}/join`, {
-        method: 'POST',
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/meetups/${meetupId}/join`, { method: 'POST' })
 
       if (!response.ok) return
 
@@ -133,10 +129,7 @@ export default function MeetupListPage() {
   const handleLeave = async (meetupId: number) => {
     setPendingId(meetupId)
     try {
-      const response = await fetch(`/api/meetups/${meetupId}/join`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
+      const response = await apiFetch(`/api/meetups/${meetupId}/join`, { method: 'DELETE' })
 
       if (!response.ok) return
 

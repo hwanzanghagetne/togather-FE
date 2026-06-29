@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleMap, useJsApiLoader, OverlayView, Autocomplete } from '@react-google-maps/api'
 import { AlignJustify, Bell, ChevronRight, Plus, Search, Zap } from 'lucide-react'
+import { apiFetch } from '../api'
 
 const LIBRARIES: ('places')[] = ['places']
 
@@ -148,9 +149,7 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    fetch(`/api/meetups/nearby?lat=${center.lat}&lng=${center.lng}&radius=10`, {
-      credentials: 'include',
-    })
+    apiFetch(`/api/meetups/nearby?lat=${center.lat}&lng=${center.lng}&radius=10`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: Meetup[]) => setMeetups(data))
       .catch(() => {})

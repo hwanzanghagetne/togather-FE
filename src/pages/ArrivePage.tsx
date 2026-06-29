@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { CheckCircle2, ChevronLeft, Clock3, MapPin } from 'lucide-react'
+import { apiFetch } from '../api'
 
 interface Participant {
   userId: number
@@ -16,7 +17,7 @@ export default function ArrivePage() {
 
   useEffect(() => {
     if (!id) return
-    fetch(`/api/meetups/${id}/participants`, { credentials: 'include' })
+    apiFetch(`/api/meetups/${id}/participants`)
       .then((r) => r.json())
       .then((data) => setParticipants(data))
       .catch(() => {})
@@ -24,7 +25,7 @@ export default function ArrivePage() {
 
   const handleArrive = async () => {
     if (!id) return
-    await fetch(`/api/meetups/${id}/arrive`, { method: 'POST', credentials: 'include' })
+    await apiFetch(`/api/meetups/${id}/arrive`, { method: 'POST' })
     setArrived(true)
     setTimeout(() => navigate(`/meetups/${id}/review`), 1500)
   }

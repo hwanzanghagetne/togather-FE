@@ -4,6 +4,7 @@ import { ChevronLeft, Plus, SendHorizonal, Users, Zap } from 'lucide-react'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { markJoinedMeetup } from '../meetupSession'
+import { apiFetch } from '../api'
 
 interface ApiMessage {
   id: number
@@ -82,7 +83,7 @@ export default function ChatRoomPage() {
 
   // 내 userId 조회
   useEffect(() => {
-    fetch('/api/members/me', { credentials: 'include' })
+    apiFetch('/api/members/me')
       .then((r) => r.json())
       .then((data) => setMyId(data.id ?? null))
       .catch(() => {})
@@ -91,7 +92,7 @@ export default function ChatRoomPage() {
   // 모임 정보 조회 (제목, 인원)
   useEffect(() => {
     if (!mid) return
-    fetch(`/api/meetups/${mid}`, { credentials: 'include' })
+    apiFetch(`/api/meetups/${mid}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.title) setTitle(data.title)
@@ -103,7 +104,7 @@ export default function ChatRoomPage() {
   // 이전 메시지 이력 조회
   useEffect(() => {
     if (!mid) return
-    fetch(`/api/chat/${mid}`, { credentials: 'include' })
+    apiFetch(`/api/chat/${mid}`)
       .then((r) => r.json())
       .then((list: ApiMessage[]) => {
         const am = avatarMap.current

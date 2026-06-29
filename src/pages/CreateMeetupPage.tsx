@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react'
 import { markJoinedMeetup } from '../meetupSession'
+import { apiFetch } from '../api'
 
 type CategoryKey = 'FOOD' | 'CAFE' | 'ACTIVITY' | 'SIGHTSEEING'
 type TimeMode = 'FLEXIBLE' | 'EXACT'
@@ -170,9 +171,8 @@ export default function CreateMeetupPage() {
         `visibility=${visibility}`,
       ]
 
-      const response = await fetch('/api/meetups', {
+      const response = await apiFetch('/api/meetups', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),

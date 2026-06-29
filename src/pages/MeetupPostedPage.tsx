@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Check, UtensilsCrossed } from 'lucide-react'
+import { apiFetch } from '../api'
 
 interface MeetupDetail {
   id: number
@@ -16,7 +17,7 @@ export default function MeetupPostedPage() {
 
   useEffect(() => {
     if (!id) return
-    fetch(`/api/meetups/${id}`, { credentials: 'include' })
+    apiFetch(`/api/meetups/${id}`)
       .then((r) => r.json())
       .then((data) => setMeetup(data))
       .catch(() => {})

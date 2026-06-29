@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiFetch } from '../../api'
 import { ONBOARDING_STORAGE_KEY } from './common'
 import type { OnboardingState } from './types'
 import Step1Splash from './Step1Splash'
@@ -29,7 +30,7 @@ export default function OnboardingFlow() {
   useEffect(() => {
     let cancelled = false
 
-    fetch('/api/members/me', { credentials: 'include' })
+    apiFetch('/api/members/me')
       .then((res) => {
         if (cancelled || !res.ok) return
         // 이미 로그인됨

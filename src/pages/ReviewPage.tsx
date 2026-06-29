@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Star } from 'lucide-react'
+import { apiFetch } from '../api'
 
 const TAGS = ['시간 약속을 잘 지켜요', '대화가 즐거워요', '친절해요', '또 만나고 싶어요']
 
@@ -25,9 +26,8 @@ export default function ReviewPage() {
   const handleSubmit = async () => {
     setSubmitting(true)
     try {
-      await fetch(`/api/meetups/${id}/review`, {
+      await apiFetch(`/api/meetups/${id}/review`, {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating, tags: selectedTags }),
       })
