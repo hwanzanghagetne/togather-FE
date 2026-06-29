@@ -1,4 +1,4 @@
-import { Check, Compass } from 'lucide-react'
+﻿import { Check, Compass } from 'lucide-react'
 import { CtaButton, gradientBg, screen } from './common'
 import type { OnboardingState } from './types'
 
@@ -9,7 +9,7 @@ interface Props {
 
 const AVATARS = [
   { initial: 'S', bg: '#FFD9C7', color: '#E0531F' },
-  { initial: '현', bg: '#D7E4FF', color: '#0066FF' },
+  { initial: '현', bg: '#D7E4FF', color: '#16A9C4' },
   { initial: '유', bg: '#D9F2DD', color: '#00973A' },
 ]
 
@@ -24,7 +24,7 @@ export default function Step7Done({ onFinish, state }: Props) {
             width: 96,
             height: 96,
             borderRadius: 999,
-            background: 'rgba(0,102,255,.1)',
+            background: 'rgba(22,169,196,.1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -36,7 +36,7 @@ export default function Step7Done({ onFinish, state }: Props) {
               height: 66,
               borderRadius: 999,
               background: 'var(--primary)',
-              boxShadow: '0 8px 20px rgba(0,102,255,.32)',
+              boxShadow: '0 8px 20px rgba(22,169,196,.32)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

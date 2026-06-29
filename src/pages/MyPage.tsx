@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, LogOut, MapPin, User } from 'lucide-react'
 import { clearJoinedMeetups } from '../meetupSession'
@@ -105,7 +105,7 @@ const s: Record<string, React.CSSProperties> = {
     width: 48,
     height: 48,
     borderRadius: 999,
-    background: 'rgba(0,102,255,0.1)',
+    background: 'rgba(22,169,196,0.1)',
     color: 'var(--primary)',
     display: 'flex',
     alignItems: 'center',

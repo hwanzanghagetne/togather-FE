@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Star } from 'lucide-react'
 import { apiFetch } from '../api'
@@ -6,7 +6,7 @@ import { apiFetch } from '../api'
 const TAGS = ['시간 약속을 잘 지켜요', '대화가 즐거워요', '친절해요', '또 만나고 싶어요']
 
 const AVATARS = [
-  { label: '민', bg: '#D7E4FF', color: '#0066FF' },
+  { label: '민', bg: '#D7E4FF', color: '#16A9C4' },
   { label: 'S', bg: '#FFD9C7', color: '#E0531F' },
   { label: '유', bg: '#D9F2DD', color: '#00973A' },
 ]
@@ -112,7 +112,7 @@ const s: Record<string, React.CSSProperties> = {
   tagLabel: { fontSize: 13, fontWeight: 700, color: 'var(--text-normal)', marginBottom: 10 },
   tagWrap: { display: 'flex', flexWrap: 'wrap', gap: 8 },
   tag: { padding: '8px 14px', borderRadius: 999, border: '1.5px solid var(--wds-line)', background: '#fff', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' },
-  tagActive: { border: '1.5px solid var(--primary)', background: 'rgba(0,102,255,.08)', color: 'var(--primary)', fontWeight: 600 },
+  tagActive: { border: '1.5px solid var(--primary)', background: 'rgba(22,169,196,.08)', color: 'var(--primary)', fontWeight: 600 },
   doneBanner: { textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#00973A', padding: '12px 0', background: 'rgba(0,151,58,.08)', borderRadius: 12 },
   footer: { padding: '12px 18px 36px', borderTop: '1px solid var(--wds-line)' },
   submitBtn: { width: '100%', height: 52, border: 'none', borderRadius: 14, background: 'var(--primary)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' },

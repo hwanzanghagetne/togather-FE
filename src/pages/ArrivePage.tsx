@@ -31,7 +31,7 @@ export default function ArrivePage() {
   }
 
   const AVATAR_COLORS = [
-    { bg: '#D7E4FF', color: '#0066FF' },
+    { bg: '#D7E4FF', color: '#16A9C4' },
     { bg: '#FFD9C7', color: '#E0531F' },
     { bg: '#D9F2DD', color: '#00973A' },
   ]

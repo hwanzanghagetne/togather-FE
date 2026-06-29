@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Plus, SendHorizonal, Users, Zap } from 'lucide-react'
 import { Client } from '@stomp/stompjs'
@@ -26,7 +26,7 @@ interface ChatMessage {
 
 const AVATAR_COLORS = [
   { bg: '#FFD9C7', color: '#E0531F' },
-  { bg: '#D7E4FF', color: '#0066FF' },
+  { bg: '#D7E4FF', color: '#16A9C4' },
   { bg: '#D9F2DD', color: '#00973A' },
   { bg: '#F3D9FF', color: '#9B20D4' },
 ]
@@ -333,7 +333,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 6,
     padding: '6px 12px',
     borderRadius: 999,
-    background: 'rgba(0,102,255,.08)',
+    background: 'rgba(22,169,196,.08)',
     color: 'var(--primary)',
     fontSize: 11.5,
     fontWeight: 500,

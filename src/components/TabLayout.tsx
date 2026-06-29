@@ -18,15 +18,15 @@ export default function TabLayout({ children }: { children: React.ReactNode }) {
       <nav style={s.tabBar}>
         {TABS.map((tab) => {
           const Icon = tab.icon
-          const active = pathname === tab.path || (tab.path === '/home' && pathname === '/')
+          const active = pathname === tab.path
           return (
             <button
               key={tab.path}
-              style={{ ...s.tabBtn, color: active ? 'var(--primary)' : '#9A9DA6' }}
+              style={{ ...s.tabBtn, color: active ? 'var(--primary)' : '#AEB1BA' }}
               onClick={() => navigate(tab.path)}
             >
-              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
-              <span style={{ ...s.tabLabel, fontWeight: active ? 700 : 500 }}>{tab.label}</span>
+              <Icon size={23} strokeWidth={active ? 2.4 : 1.8} />
+              <span style={{ ...s.tabLabel, fontWeight: active ? 600 : 500 }}>{tab.label}</span>
             </button>
           )
         })}
@@ -41,7 +41,7 @@ const s: Record<string, React.CSSProperties> = {
     background: '#fff',
     borderTop: '1px solid var(--wds-line)',
     height: 60,
-    paddingBottom: 4,
+    paddingBottom: 'max(4px, env(safe-area-inset-bottom))',
     flexShrink: 0,
   },
   tabBtn: {
@@ -57,6 +57,7 @@ const s: Record<string, React.CSSProperties> = {
     padding: 0,
   },
   tabLabel: {
-    fontSize: 10.5,
+    fontSize: 10,
+    letterSpacing: '0.01em',
   },
 }

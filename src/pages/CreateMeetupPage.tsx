@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api'
 import {
@@ -270,7 +270,7 @@ export default function CreateMeetupPage() {
             </div>
 
             <button style={s.currentLocationButton} onClick={moveToCurrentLocation}>
-              <Navigation size={20} color="var(--primary)" fill="rgba(0,102,255,0.14)" />
+              <Navigation size={20} color="var(--primary)" fill="rgba(22,169,196,0.14)" />
             </button>
 
             <div style={s.bottomSheet}>
@@ -599,7 +599,7 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 10px 22px rgba(0,102,255,0.28)',
+    boxShadow: '0 10px 22px rgba(22,169,196,0.28)',
   },
   centerPinInner: {
     width: 8,
@@ -610,7 +610,7 @@ const s: Record<string, React.CSSProperties> = {
   centerPinStem: {
     width: 2,
     height: 24,
-    background: 'rgba(0,102,255,0.55)',
+    background: 'rgba(22,169,196,0.55)',
     borderRadius: 999,
   },
   centerPinBase: {
@@ -684,7 +684,7 @@ const s: Record<string, React.CSSProperties> = {
     width: 28,
     height: 28,
     borderRadius: 999,
-    background: 'rgba(0,102,255,0.08)',
+    background: 'rgba(22,169,196,0.08)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -842,7 +842,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   calendarCardActive: {
     background: 'var(--primary)',
-    boxShadow: '0 10px 20px rgba(0,102,255,0.16)',
+    boxShadow: '0 10px 20px rgba(22,169,196,0.16)',
   },
   calendarTopLabel: {
     fontSize: 11,
@@ -875,7 +875,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   modeCardActive: {
     borderColor: 'var(--primary)',
-    background: 'rgba(0,102,255,0.08)',
+    background: 'rgba(22,169,196,0.08)',
   },
   modeTitle: {
     marginTop: 12,
@@ -998,7 +998,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   visibilityCardActive: {
     borderColor: 'var(--primary)',
-    background: 'rgba(0,102,255,0.06)',
+    background: 'rgba(22,169,196,0.06)',
   },
   visibilityTitle: {
     marginTop: 10,

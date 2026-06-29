@@ -105,7 +105,7 @@ export const screen: React.CSSProperties = {
 }
 
 export const gradientBg: React.CSSProperties = {
-  background: 'linear-gradient(180deg, #F6F9FF, #FFFFFF)',
+  background: 'linear-gradient(180deg, #EDF8FB, #FFFFFF)',
 }
 
 export const ctaBar: React.CSSProperties = {
@@ -144,7 +144,7 @@ export function LogoTile({
         height: size,
         borderRadius: radius,
         background: 'var(--primary)',
-        boxShadow: '0 10px 26px rgba(0,102,255,.32)',
+        boxShadow: '0 10px 26px rgba(22,169,196,.32)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

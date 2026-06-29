@@ -1,4 +1,4 @@
-import { Compass, Lock, MapPin, Users } from 'lucide-react'
+﻿import { Compass, Lock, MapPin, Users } from 'lucide-react'
 import { CtaButton, ctaBar, screen } from './common'
 
 interface Props {
@@ -29,13 +29,13 @@ export default function Step3Location({ onNext, onGranted }: Props) {
   const items = [
     {
       icon: <Compass size={22} color="var(--primary)" />,
-      bg: 'rgba(0,102,255,.1)',
+      bg: 'rgba(22,169,196,.1)',
       title: '근처 모임 발견',
       desc: '지금 주변에서 열리는 즉석 모임을 보여줘요',
     },
     {
       icon: <Users size={22} color="var(--primary)" />,
-      bg: 'rgba(0,102,255,.1)',
+      bg: 'rgba(22,169,196,.1)',
       title: '근처 사람과 연결',
       desc: '같은 동네 여행자·이웃이 나를 발견할 수 있어요',
     },
@@ -55,13 +55,13 @@ export default function Step3Location({ onNext, onGranted }: Props) {
             width: 88,
             height: 88,
             borderRadius: 999,
-            background: 'rgba(0,102,255,.1)',
+            background: 'rgba(22,169,196,.1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <MapPin size={42} color="var(--primary)" fill="rgba(0,102,255,.16)" />
+          <MapPin size={42} color="var(--primary)" fill="rgba(22,169,196,.16)" />
         </div>
 
         <div

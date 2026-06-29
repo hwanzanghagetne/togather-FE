@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction, ReactNode } from 'react'
+﻿import type { Dispatch, SetStateAction, ReactNode } from 'react'
 import { Coffee, Compass, Info, Telescope } from 'lucide-react'
 import { CtaButton, ProgressHeader, ctaBar, screen } from './common'
 import type { OnboardingState } from './types'
@@ -85,7 +85,7 @@ export default function Step5Interests({ onNext, onBack, state, setState }: Prop
         <div
           style={{
             marginTop: 20,
-            background: 'rgba(0,102,255,.06)',
+            background: 'rgba(22,169,196,.06)',
             borderRadius: 12,
             padding: '12px 13px',
             display: 'flex',
@@ -94,7 +94,7 @@ export default function Step5Interests({ onNext, onBack, state, setState }: Prop
           }}
         >
           <Info size={17} color="var(--primary)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: '#0054D1', fontWeight: 500 }}>
+          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: '#0C7A91', fontWeight: 500 }}>
             여행 중인지 여부는 따로 묻지 않아요. 현재 위치를 보고 알아서 맞춰드려요.
           </p>
         </div>

@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
+﻿import { useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
 import { Camera, ChevronDown, User } from 'lucide-react'
 import { CtaButton, ProgressHeader, ctaBar, screen } from './common'
 import type { OnboardingState } from './types'
@@ -103,7 +103,7 @@ export default function Step4Profile({ onNext, onBack, state, setState }: Props)
                 padding: 13,
                 borderRadius: 12,
                 border: nameFocused ? '1.5px solid var(--primary)' : '1px solid var(--wds-line)',
-                boxShadow: nameFocused ? '0 0 0 4px rgba(0,102,255,.08)' : 'none',
+                boxShadow: nameFocused ? '0 0 0 4px rgba(22,169,196,.08)' : 'none',
                 fontSize: 15,
                 fontWeight: 500,
                 color: 'var(--text-normal)',
