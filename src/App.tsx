@@ -8,6 +8,13 @@ import ChatRoomPage from './pages/ChatRoomPage'
 import ArrivePage from './pages/ArrivePage'
 import ReviewPage from './pages/ReviewPage'
 import MyPage from './pages/MyPage'
+import ProfileEditPage from './pages/ProfileEditPage'
+import NotificationPage from './pages/NotificationPage'
+import SafetyCenterPage from './pages/SafetyCenterPage'
+import HostTransferPage from './pages/HostTransferPage'
+import ReportPage from './pages/ReportPage'
+import JoinRequestPage from './pages/JoinRequestPage'
+import NotificationSettingsPage from './pages/NotificationSettingsPage'
 import TabLayout from './components/TabLayout'
 import RequireAuth from './components/RequireAuth'
 
@@ -36,6 +43,13 @@ export default function App() {
       <Route path="/chat/:meetupId" element={<ChatRoomPage />} />
       <Route path="/meetups/:id/arrive" element={<ArrivePage />} />
       <Route path="/meetups/:id/review" element={<ReviewPage />} />
+      <Route path="/meetups/:meetupId/host-transfer" element={<HostTransferPage />} />
+      <Route path="/profile/edit" element={<ProfileEditPage />} />
+      <Route path="/notifications" element={<NotificationPage />} />
+      <Route path="/safety" element={<SafetyCenterPage />} />
+      <Route path="/report" element={<ReportPage />} />
+      <Route path="/meetups/:meetupId/join-request" element={<JoinRequestPage />} />
+      <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
     </Routes>
   )
 }

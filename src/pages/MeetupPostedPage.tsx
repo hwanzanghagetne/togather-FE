@@ -6,7 +6,10 @@ import { apiFetch } from '../api'
 interface MeetupDetail {
   id: number
   title: string
+  category: string
   currentCount: number
+  notifiedCount?: number
+  interestCount?: number
 }
 
 export default function MeetupPostedPage() {
@@ -47,8 +50,11 @@ export default function MeetupPostedPage() {
 
           <div style={s.title}>번개가 떴어요</div>
           <div style={s.desc}>
-            반경 2km 안 <strong style={{ color: 'var(--text-normal)' }}>38명</strong>에게
-            <br />방금 알림을 보냈어요
+            {meetup?.notifiedCount != null ? (
+              <>반경 2km 안 <strong style={{ color: 'var(--text-normal)' }}>{meetup.notifiedCount}명</strong>에게<br />방금 알림을 보냈어요</>
+            ) : (
+              <>근처 사람들에게 방금 알림을 보냈어요</>
+            )}
           </div>
 
           {/* 실시간 통계 카드 */}
@@ -73,7 +79,7 @@ export default function MeetupPostedPage() {
                 <span>참가</span>
               </div>
               <div style={s.statCell}>
-                <strong style={{ color: 'var(--primary)' }}>0</strong>
+                <strong style={{ color: 'var(--primary)' }}>{meetup?.interestCount ?? 0}</strong>
                 <span>관심</span>
               </div>
             </div>
@@ -110,6 +116,6 @@ const s: Record<string, React.CSSProperties> = {
   stats: { display: 'flex' },
   statCell: { flex: 1, padding: '14px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, borderTop: '1px solid var(--wds-line)', fontSize: 12, color: '#9A9DA6', fontWeight: 500 },
   footer: { padding: '16px 18px 36px', display: 'flex', flexDirection: 'column', gap: 10 },
-  primaryBtn: { height: 52, border: 'none', borderRadius: 14, background: 'var(--primary)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' },
+  primaryBtn: { height: 50, border: 'none', borderRadius: 13, background: 'var(--primary)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' },
   ghostBtn: { height: 46, border: '1.5px solid var(--wds-line)', borderRadius: 14, background: 'transparent', color: 'var(--text-secondary)', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
 }

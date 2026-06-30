@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Flag, LogOut, MapPin, Settings, User } from 'lucide-react'
+import { Bell, ChevronRight, Flag, LogOut, MapPin, Settings, User } from 'lucide-react'
 import { clearJoinedMeetups } from '../meetupSession'
 import { apiFetch } from '../api'
 
@@ -10,9 +10,18 @@ interface Me {
   email?: string
 }
 
+interface Stats {
+  joinedCount: number
+  hostedCount: number
+  reviewCount: number
+  mannerTemperature?: number
+}
+
 export default function MyPage() {
   const navigate = useNavigate()
   const [me, setMe] = useState<Me | null>(null)
+  const [stats, setStats] = useState<Stats>({ joinedCount: 0, hostedCount: 0, reviewCount: 0, mannerTemperature: 36.5 })
+  const [statsLoading, setStatsLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => {
@@ -20,6 +29,11 @@ export default function MyPage() {
       .then((r) => r.ok ? r.json() : null)
       .then((d) => setMe(d))
       .catch(() => {})
+    apiFetch('/api/members/me/stats')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setStats(d) })
+      .catch(() => {})
+      .finally(() => setStatsLoading(false))
   }, [])
 
   const handleLogout = async () => {
@@ -54,7 +68,7 @@ export default function MyPage() {
             <div style={s.profileName}>{me?.nickname ?? 'ToGather 사용자'}</div>
             <div style={s.profileEmail}>{me?.email ?? '로그인 중...'}</div>
           </div>
-          <button style={s.editBtn}>
+          <button style={s.editBtn} onClick={() => navigate('/profile/edit')}>
             <Settings size={16} color="var(--text-secondary)" />
           </button>
         </div>
@@ -66,11 +80,15 @@ export default function MyPage() {
               <div style={s.tempLabel}>매너온도</div>
               <div style={s.tempDesc}>모임에서 받은 평가가 반영돼요</div>
             </div>
-            <div style={s.tempValue}>36.5°</div>
+            {statsLoading ? (
+              <div style={s.tempSkeleton} />
+            ) : (
+              <div style={s.tempValue}>{(stats.mannerTemperature ?? 36.5).toFixed(1)}°</div>
+            )}
           </div>
           <div style={s.gaugeTrack}>
-            <div style={s.gaugeFill} />
-            <div style={s.gaugeThumb} />
+            <div style={{ ...s.gaugeFill, width: `${Math.min(stats.mannerTemperature ?? 36.5, 100)}%` }} />
+            <div style={{ ...s.gaugeThumb, left: `${Math.min(stats.mannerTemperature ?? 36.5, 100)}%` }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
             <span style={s.gaugeEnd}>0°</span>
@@ -81,9 +99,9 @@ export default function MyPage() {
         {/* 통계 */}
         <div style={s.statsRow}>
           {[
-            { label: '참여한 모임', value: '0' },
-            { label: '만든 모임', value: '0' },
-            { label: '받은 평가', value: '0' },
+            { label: '참여한 모임', value: statsLoading ? '—' : String(stats.joinedCount) },
+            { label: '만든 모임', value: statsLoading ? '—' : String(stats.hostedCount) },
+            { label: '받은 평가', value: statsLoading ? '—' : String(stats.reviewCount) },
           ].map((stat) => (
             <div key={stat.label} style={s.statItem}>
               <div style={s.statValue}>{stat.value}</div>
@@ -96,7 +114,8 @@ export default function MyPage() {
         <div style={s.menuCard}>
           {[
             { icon: <MapPin size={17} color="var(--primary)" />, label: '내 주변 모임 탐색', sub: '지도로 이동', onClick: () => navigate('/home') },
-            { icon: <Flag size={17} color="var(--cautionary)" />, label: '안전센터', sub: '신고·차단 관리', onClick: undefined },
+            { icon: <Bell size={17} color="var(--text-secondary)" />, label: '알림 설정', sub: '알림 항목 선택', onClick: () => navigate('/settings/notifications') },
+            { icon: <Flag size={17} color="var(--cautionary)" />, label: '안전센터', sub: '신고·차단 관리', onClick: () => navigate('/safety') },
           ].map((item, i, arr) => (
             <button
               key={item.label}
@@ -129,8 +148,6 @@ export default function MyPage() {
   )
 }
 
-const GAUGE_PCT = 36.5
-
 const s: Record<string, React.CSSProperties> = {
   page: { height: '100%', background: 'var(--wds-fill)', overflowY: 'auto' },
   scroll: { maxWidth: 430, margin: '0 auto', padding: '20px 16px 36px', display: 'flex', flexDirection: 'column', gap: 12 },
@@ -157,8 +174,9 @@ const s: Record<string, React.CSSProperties> = {
   tempDesc: { marginTop: 2, fontSize: 12, color: 'var(--text-assistive)' },
   tempValue: { fontSize: 28, fontWeight: 700, color: 'var(--primary)', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' },
   gaugeTrack: { height: 8, borderRadius: 999, background: 'var(--wds-fill)', position: 'relative' },
-  gaugeFill: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${GAUGE_PCT}%`, borderRadius: 999, background: 'linear-gradient(90deg, #16A9C4, #1192AC)' },
-  gaugeThumb: { position: 'absolute', top: '50%', left: `${GAUGE_PCT}%`, transform: 'translate(-50%, -50%)', width: 16, height: 16, borderRadius: 999, background: '#fff', border: '2.5px solid var(--primary)', boxShadow: '0 2px 6px rgba(22,169,196,.3)' },
+  gaugeFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 999, background: 'linear-gradient(90deg, #16A9C4, #1192AC)', transition: 'width 600ms ease' },
+  gaugeThumb: { position: 'absolute', top: '50%', transform: 'translate(-50%, -50%)', width: 16, height: 16, borderRadius: 999, background: '#fff', border: '2.5px solid var(--primary)', boxShadow: '0 2px 6px rgba(22,169,196,.3)', transition: 'left 600ms ease' },
+  tempSkeleton: { width: 72, height: 34, borderRadius: 8, background: 'var(--wds-fill)', animation: 'pulse 1.4s ease infinite' },
   gaugeEnd: { fontSize: 11, color: 'var(--text-assistive)' },
 
   statsRow: { display: 'flex', gap: 10 },

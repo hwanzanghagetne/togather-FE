@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Plus, SendHorizonal, Users, Zap } from 'lucide-react'
+import { ChevronLeft, Crown, Languages, LogOut, MoreHorizontal, Plus, SendHorizonal, Users, X, Zap } from 'lucide-react'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { markJoinedMeetup } from '../meetupSession'
@@ -76,6 +76,9 @@ export default function ChatRoomPage() {
   const [myId, setMyId] = useState<number | null>(null)
   const [title, setTitle] = useState('채팅방')
   const [participants, setParticipants] = useState(0)
+  const [hostId, setHostId] = useState<number | null>(null)
+  const [showMenu, setShowMenu] = useState(false)
+  const [translateOn, setTranslateOn] = useState(false)
 
   const stompRef = useRef<Client | null>(null)
   const avatarMap = useRef(new Map<number, ReturnType<typeof makeAvatar>>())
@@ -97,6 +100,7 @@ export default function ChatRoomPage() {
       .then((data) => {
         if (data.title) setTitle(data.title)
         if (data.currentCount != null) setParticipants(data.currentCount)
+        if (data.hostId != null) setHostId(data.hostId)
       })
       .catch(() => {})
   }, [mid])
@@ -179,7 +183,55 @@ export default function ChatRoomPage() {
               <span>{participants}</span>
             </div>
           )}
+          <button style={styles.iconButton} onClick={() => setShowMenu(true)}>
+            <MoreHorizontal size={22} />
+          </button>
         </header>
+
+        {/* 방 메뉴 바텀시트 */}
+        {showMenu && (
+          <>
+            <div style={styles.menuBackdrop} onClick={() => setShowMenu(false)} />
+            <div style={styles.menuSheet}>
+              <div style={styles.menuHandle} />
+              <div style={styles.menuItems}>
+                {myId === hostId && (
+                  <>
+                    <button style={styles.menuItem} onClick={() => { setShowMenu(false); navigate(`/meetups/${mid}/host-transfer`) }}>
+                      <div style={{ ...styles.menuItemIcon, background: 'rgba(255,146,0,.1)' }}>
+                        <Crown size={18} color="#FF9200" />
+                      </div>
+                      <div>
+                        <div style={styles.menuItemLabel}>방장 양도</div>
+                        <div style={styles.menuItemSub}>다른 사람에게 방장을 넘겨요</div>
+                      </div>
+                    </button>
+                    <button style={{ ...styles.menuItem, ...styles.menuItemDanger }} onClick={() => setShowMenu(false)}>
+                      <div style={{ ...styles.menuItemIcon, background: 'rgba(255,66,66,.08)' }}>
+                        <LogOut size={18} color="var(--negative)" />
+                      </div>
+                      <div>
+                        <div style={{ ...styles.menuItemLabel, color: 'var(--negative)' }}>모임 종료</div>
+                        <div style={styles.menuItemSub}>모임을 종료하고 채팅방을 닫아요</div>
+                      </div>
+                    </button>
+                  </>
+                )}
+                {myId !== hostId && (
+                  <button style={{ ...styles.menuItem, ...styles.menuItemDanger }} onClick={() => setShowMenu(false)}>
+                    <div style={{ ...styles.menuItemIcon, background: 'rgba(255,66,66,.08)' }}>
+                      <X size={18} color="var(--negative)" />
+                    </div>
+                    <div>
+                      <div style={{ ...styles.menuItemLabel, color: 'var(--negative)' }}>모임 나가기</div>
+                      <div style={styles.menuItemSub}>채팅방에서 나가요</div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         <main ref={bodyRef as React.RefObject<HTMLElement>} style={styles.body}>
           {messages.map((message) => {
@@ -234,6 +286,13 @@ export default function ChatRoomPage() {
           )}
         </main>
 
+        {translateOn && (
+          <div style={styles.translateBanner}>
+            <Languages size={14} color="var(--primary)" />
+            <span>메시지를 한국어로 번역 중이에요</span>
+            <button style={styles.translateClose} onClick={() => setTranslateOn(false)}>끄기</button>
+          </div>
+        )}
         <footer style={styles.footer}>
           <button style={styles.footerIconButton}>
             <Plus size={22} />
@@ -248,6 +307,13 @@ export default function ChatRoomPage() {
               placeholder="메시지 입력"
               style={styles.input}
             />
+            <button
+              style={{ ...styles.translateBtn, color: translateOn ? 'var(--primary)' : 'var(--text-placeholder)', background: translateOn ? 'var(--primary-tint)' : 'transparent' }}
+              onClick={() => setTranslateOn((v) => !v)}
+              title="번역 켜기/끄기"
+            >
+              <Languages size={17} />
+            </button>
           </div>
           <button style={styles.sendButton} onClick={handleSend} disabled={!draft.trim()}>
             <SendHorizonal size={24} fill="currentColor" strokeWidth={2} />
@@ -416,15 +482,30 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--wds-fill-alt)',
     display: 'flex',
     alignItems: 'center',
-    padding: '0 14px',
+    padding: '0 8px 0 14px',
+    gap: 4,
   },
   input: {
-    width: '100%',
+    flex: 1,
     border: 'none',
     outline: 'none',
     background: 'transparent',
     color: 'var(--text-normal)',
     fontSize: 13.5,
+  },
+  translateBtn: {
+    width: 28, height: 28, borderRadius: 8, border: 'none',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', flexShrink: 0, transition: 'all 150ms ease',
+  },
+  translateBanner: {
+    display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px',
+    background: 'var(--primary-tint)', fontSize: 12.5, color: 'var(--primary)', fontWeight: 500,
+    borderTop: '1px solid rgba(22,169,196,.15)',
+  },
+  translateClose: {
+    marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: 'var(--primary)',
+    background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0',
   },
   sendButton: {
     border: 'none',
@@ -446,6 +527,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     color: 'var(--text-assistive)',
   },
+  menuBackdrop: { position: 'fixed', inset: 0, background: 'rgba(20,22,28,.4)', zIndex: 40 },
+  menuSheet: { position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, background: '#fff', borderRadius: '22px 22px 0 0', zIndex: 50, paddingBottom: 'max(16px, env(safe-area-inset-bottom))' },
+  menuHandle: { width: 40, height: 4, borderRadius: 999, background: '#D8DAE0', margin: '12px auto 16px' },
+  menuItems: { display: 'flex', flexDirection: 'column', padding: '0 16px 8px', gap: 4 },
+  menuItem: { display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', borderRadius: 14, border: 'none', background: 'var(--wds-fill)', cursor: 'pointer', textAlign: 'left', width: '100%' },
+  menuItemDanger: { background: 'rgba(255,66,66,.04)' },
+  menuItemIcon: { width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  menuItemLabel: { fontSize: 14, fontWeight: 700, color: 'var(--text-normal)' },
+  menuItemSub: { fontSize: 12, color: 'var(--text-assistive)', marginTop: 2 },
 }
 
 

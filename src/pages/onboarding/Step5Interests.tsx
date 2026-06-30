@@ -1,12 +1,10 @@
-﻿import type { Dispatch, SetStateAction, ReactNode } from 'react'
-import { Coffee, Compass, Info, Telescope } from 'lucide-react'
+﻿import type { Dispatch, SetStateAction } from 'react'
 import { CtaButton, ProgressHeader, ctaBar, screen } from './common'
 import type { OnboardingState } from './types'
 
 interface InterestItem {
   key: string
   label: string
-  icon?: ReactNode
 }
 
 interface Props {
@@ -17,10 +15,10 @@ interface Props {
 }
 
 const INTERESTS: InterestItem[] = [
-  { key: 'food', label: '맛집·식사', icon: <Coffee size={15} /> },
-  { key: 'activity', label: '액티비티', icon: <Compass size={15} /> },
+  { key: 'food', label: '맛집·식사' },
   { key: 'cafe', label: '카페·디저트' },
-  { key: 'tour', label: '관광·투어', icon: <Telescope size={15} /> },
+  { key: 'activity', label: '액티비티' },
+  { key: 'tour', label: '관광·투어' },
   { key: 'nightlife', label: '술·나이트라이프' },
   { key: 'study', label: '스터디·언어교환' },
   { key: 'sports', label: '운동·러닝' },
@@ -68,36 +66,17 @@ export default function Step5Interests({ onNext, onBack, state, setState }: Prop
                   color: isSelected ? '#fff' : '#5A5D66',
                   fontSize: 13.5,
                   fontWeight: isSelected ? 600 : 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: isSelected && item.icon ? 6 : 0,
                   cursor: 'pointer',
                   transition: 'background 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1)',
                 }}
               >
-                {isSelected && item.icon}
                 {item.label}
               </button>
             )
           })}
         </div>
 
-        <div
-          style={{
-            marginTop: 20,
-            background: 'rgba(22,169,196,.06)',
-            borderRadius: 12,
-            padding: '12px 13px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 8,
-          }}
-        >
-          <Info size={17} color="var(--primary)" style={{ flexShrink: 0, marginTop: 1 }} />
-          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: '#0C7A91', fontWeight: 500 }}>
-            여행 중인지 여부는 따로 묻지 않아요. 현재 위치를 보고 알아서 맞춰드려요.
-          </p>
-        </div>
+
       </div>
 
       <div style={ctaBar}>
