@@ -1,6 +1,8 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api'
+
+const LIBRARIES: ('places')[] = ['places']
 import {
   ChevronLeft,
   Clock3,
@@ -74,7 +76,7 @@ export default function CreateMeetupPage() {
   const [ageMax, setAgeMax] = useState(80)
 
   const mapApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
-  const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: mapApiKey, libraries: ['places'] as ('places')[] })
+  const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: mapApiKey, libraries: LIBRARIES })
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
