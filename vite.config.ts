@@ -14,8 +14,8 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/oauth2\//, /^\/login\//, /^\/api\//],
       },
       manifest: {
-        name: 'Chat - 즉석 모임 매칭',
-        short_name: 'Chat',
+        name: 'ToGather - 즉석 모임 매칭',
+        short_name: 'ToGather',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
