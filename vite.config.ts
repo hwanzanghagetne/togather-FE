@@ -10,6 +10,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        navigateFallbackDenylist: [/^\/oauth2\//, /^\/login\//, /^\/api\//],
+      },
       manifest: {
         name: 'Chat - 즉석 모임 매칭',
         short_name: 'Chat',
