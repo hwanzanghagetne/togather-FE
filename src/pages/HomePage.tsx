@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GoogleMap, useJsApiLoader, OverlayView, Autocomplete } from '@react-google-maps/api'
+import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api'
 import { Bell, Crosshair, List, Plus, X, Zap } from 'lucide-react'
 import { apiFetch } from '../api'
 import { readJoinedMeetupIds, markJoinedMeetup, markLeftMeetup } from '../meetupSession'
@@ -126,8 +126,8 @@ export default function HomePage() {
   const [myId, setMyId] = useState<number | null>(null)
   const [joinedIds, setJoinedIds] = useState<number[]>(() => readJoinedMeetupIds())
   const [pending, setPending] = useState(false)
+  const [searchVal, setSearchVal] = useState('')
   const mapRef = useRef<google.maps.Map | null>(null)
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
@@ -153,15 +153,20 @@ export default function HomePage() {
 
   const onMapLoad = useCallback((map: google.maps.Map) => { mapRef.current = map }, [])
 
-  const onPlaceChanged = useCallback(() => {
-    const place = autocompleteRef.current?.getPlace()
-    if (!place?.geometry?.location) return
-    const lat = place.geometry.location.lat()
-    const lng = place.geometry.location.lng()
-    setCenter({ lat, lng })
-    mapRef.current?.panTo({ lat, lng })
-    mapRef.current?.setZoom(15)
-  }, [])
+  const handleSearch = useCallback(() => {
+    const q = searchVal.trim()
+    if (!q || !isLoaded) return
+    const geocoder = new google.maps.Geocoder()
+    geocoder.geocode({ address: q }, (results, status) => {
+      if (status === 'OK' && results?.[0]?.geometry?.location) {
+        const lat = results[0].geometry.location.lat()
+        const lng = results[0].geometry.location.lng()
+        setCenter({ lat, lng })
+        mapRef.current?.panTo({ lat, lng })
+        mapRef.current?.setZoom(15)
+      }
+    })
+  }, [searchVal, isLoaded])
 
   const recenter = () => {
     navigator.geolocation?.getCurrentPosition((pos) => {
@@ -210,17 +215,13 @@ export default function HomePage() {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-placeholder)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
-          {isLoaded ? (
-            <Autocomplete
-              onLoad={(ac) => { autocompleteRef.current = ac }}
-              onPlaceChanged={onPlaceChanged}
-              options={{ fields: ['geometry', 'name'] }}
-            >
-              <input style={s.searchInput} placeholder="지역 · 지금 근처" />
-            </Autocomplete>
-          ) : (
-            <span style={s.searchPlaceholder}>지역 · 지금 근처</span>
-          )}
+          <input
+            style={s.searchInput}
+            placeholder="지역 · 지금 근처"
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
         </div>
         <button style={s.bellBtn} onClick={() => navigate('/notifications')}>
           <Bell size={19} color="var(--text-normal)" strokeWidth={1.8} />
