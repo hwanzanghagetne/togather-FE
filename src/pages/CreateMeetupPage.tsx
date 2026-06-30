@@ -74,7 +74,7 @@ export default function CreateMeetupPage() {
   const [ageMax, setAgeMax] = useState(80)
 
   const mapApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
-  const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: mapApiKey })
+  const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: mapApiKey, libraries: ['places'] as ('places')[] })
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
