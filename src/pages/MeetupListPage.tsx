@@ -74,7 +74,7 @@ export default function MeetupListPage() {
     const active = meetups.filter((m) => m.status !== 'CLOSED')
     const past = meetups.filter((m) => m.status === 'CLOSED')
     return {
-      joined: active.filter((m) => m.hostId !== myId),
+      joined: active, // 내가 만든 모임도 참여중에 표시
       hosted: active.filter((m) => m.hostId === myId),
       past,
     }

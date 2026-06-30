@@ -74,7 +74,7 @@ export default function ReportPage() {
           <span style={s.headerTitle}>신고하기</span>
           <div style={s.stepIndicator}>
             {(['reason', 'detail', 'confirm'] as Step[]).map((st, i) => (
-              <div key={st} style={{ ...s.stepDot, background: step === st ? 'var(--primary)' : step === 'done' || (['reason','detail','confirm'] as Step[]).indexOf(step) > i ? 'var(--primary)' : 'var(--wds-line-strong)' }} />
+              <div key={st} style={{ ...s.stepDot, background: step === st ? 'var(--primary)' : (['reason','detail','confirm'] as Step[]).indexOf(step as Step) > i ? 'var(--primary)' : 'var(--wds-line-strong)' }} />
             ))}
           </div>
         </header>

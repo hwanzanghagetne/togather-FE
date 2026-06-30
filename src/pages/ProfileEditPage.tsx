@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, ChevronLeft, User } from 'lucide-react'
+import { Camera, ChevronLeft } from 'lucide-react'
 import { apiFetch } from '../api'
 
 interface Me {

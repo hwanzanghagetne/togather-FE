@@ -69,6 +69,20 @@ const AVATAR_COLORS = [
   { bg: '#EDE4FF', fg: '#6541F2' },
 ]
 
+function timeLeftShort(expiresAt?: string) {
+  if (!expiresAt) return '오늘 중'
+  const diff = new Date(expiresAt).getTime() - Date.now()
+  if (diff <= 0) return '종료'
+  const h = Math.floor(diff / 3600000)
+  const m = Math.floor((diff % 3600000) / 60000)
+  return h >= 1 ? `${h}시간 후` : `${m}분 후`
+}
+
+function formatAddr(address?: string) {
+  if (!address || address === '선택한 위치') return null
+  return address.replace(/^대한민국\s*/, '').split(' ').slice(-2).join(' ')
+}
+
 function PinMarker({ color, emoji, count, selected, onClick }: {
   color: string; emoji: string; count: number; selected: boolean; onClick: () => void
 }) {
@@ -368,10 +382,12 @@ export default function HomePage() {
         <Crosshair size={18} color="var(--text-secondary)" strokeWidth={2} />
       </button>
 
-      {/* + FAB — 우하단 right:16 bottom:90 */}
-      <button style={s.fab} onClick={() => navigate('/meetups/new')}>
-        <Plus size={22} color="#fff" strokeWidth={2.5} />
-      </button>
+      {/* + FAB — 카드 없을 때만 표시 */}
+      {!selected && (
+        <button style={s.fab} onClick={() => navigate('/meetups/new')}>
+          <Plus size={22} color="#fff" strokeWidth={2.5} />
+        </button>
+      )}
 
       {/* 리스트 바텀시트 */}
       {showList && (
@@ -380,7 +396,7 @@ export default function HomePage() {
           <div style={s.sheet}>
             <div style={s.sheetHandle} />
             <div style={s.sheetHeader}>
-              <span style={s.sheetTitle}>이 지역 모임 {filtered.length}개</span>
+              <span style={s.sheetTitle}>이 지도 범위 · {filtered.length}개</span>
             </div>
             <div style={s.sheetList}>
               {filtered.length === 0 ? (
@@ -397,7 +413,17 @@ export default function HomePage() {
                         {isJoined(m) && <span style={{ ...s.nowBadge, background: 'var(--primary-tint)', color: 'var(--primary)' }}>참여중</span>}
                       </div>
                       <div style={s.sheetCardTitle}>{m.title}</div>
-                      {m.address && <div style={s.sheetCardMeta}>{m.address.replace(/^대한민국\s*/, '')}</div>}
+                      <div style={s.sheetCardMeta}>
+                        {CAT_LABEL[m.category] ?? '기타'}
+                        <span style={{ margin: '0 4px', color: 'var(--wds-line-strong)' }}>·</span>
+                        {timeLeftShort(m.expiresAt)}
+                        {formatAddr(m.address) && (
+                          <>
+                            <span style={{ margin: '0 4px', color: 'var(--wds-line-strong)' }}>·</span>
+                            {formatAddr(m.address)}
+                          </>
+                        )}
+                      </div>
                     </div>
                     <span style={s.sheetCardCount}>{m.currentCount}명</span>
                   </div>
@@ -430,8 +456,8 @@ const s: Record<string, React.CSSProperties> = {
 
   countBadge: { position: 'absolute', top: 116, left: '50%', transform: 'translateX(-50%)', zIndex: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 999, background: 'rgba(22,22,26,0.82)', color: '#fff', fontSize: 12, fontWeight: 600, backdropFilter: 'blur(8px)', whiteSpace: 'nowrap' },
 
-  /* 팝업 카드 — bottom:90으로 FAB 위에 표시 */
-  popupCard: { position: 'absolute', bottom: 90, left: 16, right: 16, zIndex: 15, background: '#fff', borderRadius: 20, padding: '16px', boxShadow: '0 8px 28px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column' },
+  /* 팝업 카드 — 하단 바텀시트 스타일 */
+  popupCard: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 15, background: '#fff', borderRadius: '20px 20px 0 0', padding: '20px 16px 28px', boxShadow: '0 -6px 20px rgba(0,0,0,.12)', display: 'flex', flexDirection: 'column' },
   closeBtn: { position: 'absolute', top: 14, right: 14, width: 28, height: 28, borderRadius: 999, border: 'none', background: 'var(--wds-fill)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 },
   nowBadge: { fontSize: 10.5, fontWeight: 700, color: '#FF6B35', background: 'rgba(255,107,53,.12)', borderRadius: 5, padding: '2px 6px', display: 'inline-flex', alignItems: 'center' },
   popupTitle: { fontSize: 16, fontWeight: 700, color: 'var(--text-normal)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api'
 
@@ -45,6 +45,59 @@ const MAP_STYLES = [
   { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
 ]
 
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
+const WHEEL_H = 44
+
+function WheelColumn({ items, value, onChange, format }: {
+  items: number[]
+  value: number
+  onChange: (v: number) => void
+  format: (v: number) => string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const idx = items.indexOf(value)
+
+  useEffect(() => {
+    if (ref.current && idx >= 0) {
+      ref.current.scrollTop = idx * WHEEL_H
+    }
+  }, []) // eslint-disable-line
+
+  const handleScroll = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const i = Math.round(el.scrollTop / WHEEL_H)
+    const clamped = Math.max(0, Math.min(i, items.length - 1))
+    if (items[clamped] !== value) onChange(items[clamped])
+  }, [items, value, onChange])
+
+  return (
+    <div style={{ position: 'relative', width: 72, height: WHEEL_H * 3, overflow: 'hidden', borderRadius: 12 }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: WHEEL_H, background: 'linear-gradient(to bottom, rgba(247,248,250,1), rgba(247,248,250,0))', zIndex: 2, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: WHEEL_H, background: 'linear-gradient(to top, rgba(247,248,250,1), rgba(247,248,250,0))', zIndex: 2, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: WHEEL_H, left: 4, right: 4, height: WHEEL_H, background: 'var(--primary-tint)', borderRadius: 10, border: '1.5px solid var(--primary)', zIndex: 1 }} />
+      <div
+        ref={ref}
+        className="wheel-scroll"
+        onScroll={handleScroll}
+        style={{ position: 'relative', height: '100%', overflowY: 'scroll', scrollSnapType: 'y mandatory', scrollPaddingTop: WHEEL_H, WebkitOverflowScrolling: 'touch', zIndex: 3, msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+      >
+        <div style={{ height: WHEEL_H }} />
+        {items.map((item) => (
+          <div
+            key={item}
+            style={{ height: WHEEL_H, display: 'flex', alignItems: 'center', justifyContent: 'center', scrollSnapAlign: 'start', fontSize: 22, fontWeight: 700, color: item === value ? 'var(--primary)' : 'var(--text-secondary)', userSelect: 'none' }}
+          >
+            {format(item)}
+          </div>
+        ))}
+        <div style={{ height: WHEEL_H }} />
+      </div>
+    </div>
+  )
+}
+
 function toDateInputValue(date: Date) {
   const year = date.getFullYear()
   const month = `${date.getMonth() + 1}`.padStart(2, '0')
@@ -71,9 +124,13 @@ export default function CreateMeetupPage() {
   const [category, setCategory] = useState<CategoryKey>('FOOD')
   const [meetingDate, setMeetingDate] = useState(() => toDateInputValue(new Date()))
   const [timeMode, setTimeMode] = useState<TimeMode>('FLEXIBLE')
-  const [meetingTime, setMeetingTime] = useState('19:00')
+  const [timeHr, setTimeHr] = useState(19)
+  const [timeMin, setTimeMin] = useState(0)
   const [visibility, setVisibility] = useState<VisibilityMode>('PUBLIC')
+  const [ageMin, setAgeMin] = useState(20)
   const [ageMax, setAgeMax] = useState(80)
+
+  const meetingTime = `${String(timeHr).padStart(2, '0')}:${String(timeMin).padStart(2, '0')}`
 
   const mapApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
   const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: mapApiKey, libraries: LIBRARIES })
@@ -110,23 +167,34 @@ export default function CreateMeetupPage() {
   const calendarOptions = useMemo(() => {
     const weekdays = ['일', '월', '화', '수', '목', '금', '토']
     const start = new Date()
+    start.setHours(0, 0, 0, 0)
 
-    return Array.from({ length: 6 }, (_, index) => {
+    return Array.from({ length: 14 }, (_, index) => {
       const date = new Date(start)
       date.setDate(start.getDate() + index)
+      const prevDate = index === 0 ? null : new Date(start)
+      if (prevDate) prevDate.setDate(start.getDate() + index - 1)
+      const isMonthBoundary = prevDate !== null && date.getMonth() !== prevDate.getMonth()
 
       return {
         value: toDateInputValue(date),
         topLabel: index === 0 ? '오늘' : weekdays[date.getDay()],
         dayNumber: `${date.getDate()}`,
+        isMonthBoundary,
+        monthShort: `${date.getMonth() + 1}월`,
       }
     })
   }, [])
 
+  const displayMonth = (() => {
+    const d = new Date(meetingDate + 'T00:00:00')
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월`
+  })()
+
   const canContinue =
     step === 0 ||
     (step === 1 && title.trim().length > 0) ||
-    (step === 2 && meetingDate.length > 0 && (timeMode === 'FLEXIBLE' || meetingTime.length > 0)) ||
+    (step === 2 && meetingDate.length > 0) ||
     step === 3
 
   const handleBack = () => {
@@ -169,7 +237,7 @@ export default function CreateMeetupPage() {
         `meetingDate=${meetingDate}`,
         `timeMode=${timeMode}`,
         timeMode === 'EXACT' ? `meetingTime=${meetingTime}` : 'meetingTime=flexible',
-        `ageRange=20-${ageMax}`,
+        `ageRange=${ageMin}-${ageMax}`,
         `visibility=${visibility}`,
       ]
 
@@ -303,7 +371,7 @@ export default function CreateMeetupPage() {
                   <ChevronLeft size={20} />
                   <span>뒤로</span>
                 </button>
-                <span style={s.sheetStepText}>{step}/4</span>
+                <span style={s.sheetStepText}>{step}/3</span>
               </div>
 
               {step === 1 && (
@@ -358,19 +426,30 @@ export default function CreateMeetupPage() {
                   </div>
 
                   <section>
-                    <div style={s.sectionLabel}>날짜</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#16161A' }}>날짜</div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-assistive)' }}>{displayMonth}</span>
+                    </div>
                     <div style={s.calendarRow}>
                       {calendarOptions.map((option) => {
                         const active = meetingDate === option.value
                         return (
-                          <button
-                            key={option.value}
-                            style={{ ...s.calendarCard, ...(active ? s.calendarCardActive : {}) }}
-                            onClick={() => setMeetingDate(option.value)}
-                          >
-                            <span style={{ ...s.calendarTopLabel, color: active ? '#FFFFFFCC' : '#8A8E97' }}>{option.topLabel}</span>
-                            <span style={{ ...s.calendarDayNumber, color: active ? '#fff' : '#16161A' }}>{option.dayNumber}</span>
-                          </button>
+                          <div key={option.value} style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
+                            {option.isMonthBoundary && (
+                              <div style={{ width: 1, height: 52, background: 'var(--wds-line)', marginRight: 10, flexShrink: 0 }} />
+                            )}
+                            <button
+                              style={{ ...s.calendarCard, ...(active ? s.calendarCardActive : {}) }}
+                              onClick={() => setMeetingDate(option.value)}
+                            >
+                              <span style={{ ...s.calendarTopLabel, color: option.isMonthBoundary && !active ? 'var(--primary)' : active ? '#FFFFFFCC' : '#8A8E97' }}>
+                                {option.isMonthBoundary ? option.monthShort : option.topLabel}
+                              </span>
+                              <span style={{ ...s.calendarDayNumber, color: active ? '#fff' : option.isMonthBoundary ? 'var(--primary)' : '#16161A' }}>
+                                {option.dayNumber}
+                              </span>
+                            </button>
+                          </div>
                         )
                       })}
                     </div>
@@ -397,14 +476,25 @@ export default function CreateMeetupPage() {
                       </button>
                     </div>
                     {timeMode === 'EXACT' && (
-                      <div style={s.timeFieldWrap}>
-                        <Clock3 size={17} color="#6A6D76" />
-                        <input
-                          type="time"
-                          value={meetingTime}
-                          onChange={(event) => setMeetingTime(event.target.value)}
-                          style={s.timeInput}
-                        />
+                      <div style={{ marginTop: 14, background: '#F7F8FA', borderRadius: 18, padding: '16px 0 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          <WheelColumn
+                            items={HOURS}
+                            value={timeHr}
+                            onChange={setTimeHr}
+                            format={(h) => String(h).padStart(2, '0')}
+                          />
+                          <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--primary)', marginBottom: 2 }}>:</span>
+                          <WheelColumn
+                            items={MINUTES}
+                            value={timeMin}
+                            onChange={setTimeMin}
+                            format={(m) => String(m).padStart(2, '0')}
+                          />
+                        </div>
+                        <div style={{ textAlign: 'center', marginTop: 10, fontSize: 13, color: 'var(--text-assistive)' }}>
+                          선택한 시간: <strong style={{ color: 'var(--primary)' }}>{meetingTime}</strong>
+                        </div>
                       </div>
                     )}
                   </section>
@@ -428,21 +518,27 @@ export default function CreateMeetupPage() {
                       </div>
                       <div style={s.ageSliderWrap}>
                         <div style={s.ageTrack} />
-                        <div style={{ ...s.ageRangeFill, width: `${((ageMax - 20) / 60) * 100}%` }} />
-                        <div style={s.ageThumbLeft} />
-                        <div style={{ ...s.ageThumbRight, left: `calc(${((ageMax - 20) / 60) * 100}% - 8px)` }} />
+                        <div style={{
+                          position: 'absolute', top: 9, height: 4, borderRadius: 999, background: 'var(--primary)',
+                          left: `${((ageMin - 20) / 60) * 100}%`,
+                          width: `${((ageMax - ageMin) / 60) * 100}%`,
+                        }} />
                         <input
-                          type="range"
-                          min={20}
-                          max={80}
-                          value={ageMax}
-                          onChange={(event) => setAgeMax(Number(event.target.value))}
-                          style={s.ageRangeInput}
+                          className="dual-range"
+                          type="range" min={20} max={80} value={ageMin}
+                          onChange={(e) => setAgeMin(Math.min(Number(e.target.value), ageMax - 2))}
+                          style={{ zIndex: ageMin > ageMax - 10 ? 5 : 3 }}
+                        />
+                        <input
+                          className="dual-range"
+                          type="range" min={20} max={80} value={ageMax}
+                          onChange={(e) => setAgeMax(Math.max(Number(e.target.value), ageMin + 2))}
+                          style={{ zIndex: 4 }}
                         />
                       </div>
                       <div style={s.ageLabels}>
-                        <span>20</span>
-                        <span>{ageMax >= 80 ? '80+' : ageMax}</span>
+                        <span>{ageMin}세</span>
+                        <span>{ageMax >= 80 ? '80세 이상' : `${ageMax}세`}</span>
                       </div>
                     </div>
                   </section>
@@ -936,17 +1032,17 @@ const s: Record<string, React.CSSProperties> = {
   },
   ageTrack: {
     position: 'absolute',
-    top: 8,
-    left: 10,
-    right: 10,
+    top: 9,
+    left: 0,
+    right: 0,
     height: 4,
     borderRadius: 999,
     background: '#D7DCE6',
   },
   ageRangeFill: {
     position: 'absolute',
-    top: 8,
-    left: 10,
+    top: 9,
+    left: 0,
     height: 4,
     borderRadius: 999,
     background: 'var(--primary)',

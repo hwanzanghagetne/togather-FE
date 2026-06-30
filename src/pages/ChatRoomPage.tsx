@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Crown, Languages, LogOut, MoreHorizontal, Plus, SendHorizonal, Users, X, Zap } from 'lucide-react'
+import { Bell, ChevronLeft, ChevronRight, Crown, Flag, Info, Languages, LogOut, MoreHorizontal, Plus, SendHorizonal, Users, X, Zap } from 'lucide-react'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { markJoinedMeetup } from '../meetupSession'
@@ -79,6 +79,9 @@ export default function ChatRoomPage() {
   const [hostId, setHostId] = useState<number | null>(null)
   const [showMenu, setShowMenu] = useState(false)
   const [translateOn, setTranslateOn] = useState(false)
+  const [muteNotif, setMuteNotif] = useState(false)
+  const [category, setCategory] = useState('')
+  const [address, setAddress] = useState('')
 
   const stompRef = useRef<Client | null>(null)
   const avatarMap = useRef(new Map<number, ReturnType<typeof makeAvatar>>())
@@ -101,6 +104,8 @@ export default function ChatRoomPage() {
         if (data.title) setTitle(data.title)
         if (data.currentCount != null) setParticipants(data.currentCount)
         if (data.hostId != null) setHostId(data.hostId)
+        if (data.category) setCategory(data.category)
+        if (data.address) setAddress(data.address.replace(/^대한민국\s*/, ''))
       })
       .catch(() => {})
   }, [mid])
@@ -194,36 +199,101 @@ export default function ChatRoomPage() {
             <div style={styles.menuBackdrop} onClick={() => setShowMenu(false)} />
             <div style={styles.menuSheet}>
               <div style={styles.menuHandle} />
+              {/* 모임 요약 헤더 */}
+              <div style={styles.menuHeader}>
+                <div style={styles.menuHeaderTile}>
+                  <span style={{ fontSize: 20 }}>
+                    {category === 'FOOD' ? '🍽' : category === 'CAFE' ? '☕' : category === 'ACTIVITY' ? '⚡' : category === 'SIGHTSEEING' ? '📍' : '●'}
+                  </span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={styles.menuHeaderTitle}>{title}</div>
+                  {address ? <div style={styles.menuHeaderMeta}>{address} · {participants}명 참여</div> : <div style={styles.menuHeaderMeta}>{participants}명 참여</div>}
+                </div>
+              </div>
+
               <div style={styles.menuItems}>
+                {/* 공통 메뉴 */}
+                <button style={styles.menuItem} onClick={() => setShowMenu(false)}>
+                  <div style={{ ...styles.menuItemIcon, background: 'rgba(22,169,196,.1)' }}>
+                    <Info size={18} color="var(--primary)" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={styles.menuItemLabel}>모임 정보</div>
+                  </div>
+                  <ChevronRight size={16} color="var(--text-assistive)" />
+                </button>
+
+                <button style={styles.menuItem} onClick={() => setShowMenu(false)}>
+                  <div style={{ ...styles.menuItemIcon, background: 'rgba(22,169,196,.1)' }}>
+                    <Users size={18} color="var(--primary)" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={styles.menuItemLabel}>멤버 보기</div>
+                    <div style={styles.menuItemSub}>{participants}명 참여 중</div>
+                  </div>
+                  <ChevronRight size={16} color="var(--text-assistive)" />
+                </button>
+
+                <div style={styles.menuItem}>
+                  <div style={{ ...styles.menuItemIcon, background: 'rgba(154,157,166,.12)' }}>
+                    <Bell size={18} color="var(--text-secondary)" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={styles.menuItemLabel}>이 채팅 알림 끄기</div>
+                  </div>
+                  <button
+                    style={{ ...styles.toggle, background: muteNotif ? 'var(--primary)' : '#D0D3DC' }}
+                    onClick={() => setMuteNotif((v) => !v)}
+                  >
+                    <div style={{ ...styles.toggleKnob, transform: muteNotif ? 'translateX(18px)' : 'translateX(0)' }} />
+                  </button>
+                </div>
+
+                <div style={styles.menuDivider} />
+
+                <button style={{ ...styles.menuItem }} onClick={() => { setShowMenu(false); navigate('/report') }}>
+                  <div style={{ ...styles.menuItemIcon, background: 'rgba(255,146,0,.1)' }}>
+                    <Flag size={18} color="#FF9200" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ ...styles.menuItemLabel, color: '#FF9200' }}>신고하기</div>
+                  </div>
+                </button>
+
+                {/* 방장 전용 */}
                 {myId === hostId && (
-                  <>
-                    <button style={styles.menuItem} onClick={() => { setShowMenu(false); navigate(`/meetups/${mid}/host-transfer`) }}>
-                      <div style={{ ...styles.menuItemIcon, background: 'rgba(255,146,0,.1)' }}>
-                        <Crown size={18} color="#FF9200" />
-                      </div>
-                      <div>
-                        <div style={styles.menuItemLabel}>방장 양도</div>
-                        <div style={styles.menuItemSub}>다른 사람에게 방장을 넘겨요</div>
-                      </div>
-                    </button>
-                    <button style={{ ...styles.menuItem, ...styles.menuItemDanger }} onClick={() => setShowMenu(false)}>
-                      <div style={{ ...styles.menuItemIcon, background: 'rgba(255,66,66,.08)' }}>
-                        <LogOut size={18} color="var(--negative)" />
-                      </div>
-                      <div>
-                        <div style={{ ...styles.menuItemLabel, color: 'var(--negative)' }}>모임 종료</div>
-                        <div style={styles.menuItemSub}>모임을 종료하고 채팅방을 닫아요</div>
-                      </div>
-                    </button>
-                  </>
+                  <button style={styles.menuItem} onClick={() => { setShowMenu(false); navigate(`/meetups/${mid}/host-transfer`) }}>
+                    <div style={{ ...styles.menuItemIcon, background: 'rgba(255,146,0,.1)' }}>
+                      <Crown size={18} color="#FF9200" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={styles.menuItemLabel}>방장 양도</div>
+                      <div style={styles.menuItemSub}>다른 사람에게 방장을 넘겨요</div>
+                    </div>
+                  </button>
                 )}
-                {myId !== hostId && (
-                  <button style={{ ...styles.menuItem, ...styles.menuItemDanger }} onClick={() => setShowMenu(false)}>
+
+                <div style={styles.menuDivider} />
+
+                {/* 나가기 */}
+                {myId === hostId ? (
+                  <button style={{ ...styles.menuItem }} onClick={() => setShowMenu(false)}>
+                    <div style={{ ...styles.menuItemIcon, background: 'rgba(255,66,66,.08)' }}>
+                      <LogOut size={18} color="var(--negative)" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ ...styles.menuItemLabel, color: 'var(--negative)' }}>모임 종료</div>
+                      <div style={styles.menuItemSub}>모임을 종료하고 채팅방을 닫아요</div>
+                    </div>
+                  </button>
+                ) : (
+                  <button style={{ ...styles.menuItem }} onClick={() => setShowMenu(false)}>
                     <div style={{ ...styles.menuItemIcon, background: 'rgba(255,66,66,.08)' }}>
                       <X size={18} color="var(--negative)" />
                     </div>
-                    <div>
-                      <div style={{ ...styles.menuItemLabel, color: 'var(--negative)' }}>모임 나가기</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ ...styles.menuItemLabel, color: 'var(--negative)' }}>채팅방 나가기</div>
                       <div style={styles.menuItemSub}>채팅방에서 나가요</div>
                     </div>
                   </button>
@@ -528,14 +598,21 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-assistive)',
   },
   menuBackdrop: { position: 'fixed', inset: 0, background: 'rgba(20,22,28,.4)', zIndex: 40 },
-  menuSheet: { position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, background: '#fff', borderRadius: '22px 22px 0 0', zIndex: 50, paddingBottom: 'max(16px, env(safe-area-inset-bottom))' },
-  menuHandle: { width: 40, height: 4, borderRadius: 999, background: '#D8DAE0', margin: '12px auto 16px' },
-  menuItems: { display: 'flex', flexDirection: 'column', padding: '0 16px 8px', gap: 4 },
-  menuItem: { display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', borderRadius: 14, border: 'none', background: 'var(--wds-fill)', cursor: 'pointer', textAlign: 'left', width: '100%' },
+  menuSheet: { position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, background: '#fff', borderRadius: '22px 22px 0 0', zIndex: 50, paddingBottom: 'max(16px, env(safe-area-inset-bottom))', maxHeight: '85dvh', overflowY: 'auto' },
+  menuHandle: { width: 40, height: 4, borderRadius: 999, background: '#D8DAE0', margin: '12px auto 0' },
+  menuHeader: { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px 14px', borderBottom: '1px solid var(--wds-line)' },
+  menuHeaderTile: { width: 44, height: 44, borderRadius: 12, background: 'var(--primary-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 },
+  menuHeaderTitle: { fontSize: 14, fontWeight: 700, color: 'var(--text-normal)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  menuHeaderMeta: { fontSize: 11.5, color: 'var(--text-assistive)', marginTop: 2 },
+  menuItems: { display: 'flex', flexDirection: 'column', padding: '8px 16px 8px', gap: 2 },
+  menuItem: { display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', borderRadius: 14, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' },
   menuItemDanger: { background: 'rgba(255,66,66,.04)' },
   menuItemIcon: { width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   menuItemLabel: { fontSize: 14, fontWeight: 700, color: 'var(--text-normal)' },
   menuItemSub: { fontSize: 12, color: 'var(--text-assistive)', marginTop: 2 },
+  menuDivider: { height: 1, background: 'var(--wds-line)', margin: '4px 0' },
+  toggle: { width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 200ms ease', flexShrink: 0, padding: 0 },
+  toggleKnob: { position: 'absolute', top: 2, left: 2, width: 20, height: 20, borderRadius: 999, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.2)', transition: 'transform 200ms ease' },
 }
 
 
