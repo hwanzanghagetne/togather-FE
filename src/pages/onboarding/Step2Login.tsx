@@ -92,47 +92,6 @@ export default function Step2Login({ onNext: _onNext }: Props) {
           </span>
         </div>
 
-        {/* 일러스트 영역 — 지도 미리보기 느낌의 장식 */}
-        <div style={{
-          marginTop: 32,
-          width: '100%',
-          height: 180,
-          borderRadius: 20,
-          background: 'linear-gradient(135deg, #EDF8FB 0%, #D0F0F7 100%)',
-          position: 'relative',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          {/* 장식 원들 */}
-          <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: 999, background: 'rgba(22,169,196,.12)', top: 20, left: 30 }} />
-          <div style={{ position: 'absolute', width: 80, height: 80, borderRadius: 999, background: 'rgba(22,169,196,.15)', bottom: 10, right: 40 }} />
-          {/* 핀 마커 3개 */}
-          {[
-            { top: 40, left: '30%', bg: '#FF6B35', emoji: '🍽' },
-            { top: 60, left: '55%', bg: '#16A9C4', emoji: '⚡' },
-            { top: 90, left: '20%', bg: '#6541F2', emoji: '☕' },
-          ].map((p, i) => (
-            <div key={i} style={{ position: 'absolute', top: p.top, left: p.left, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ width: 36, height: 36, borderRadius: 999, background: p.bg, border: '2.5px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, boxShadow: '0 3px 8px rgba(0,0,0,.18)' }}>
-                {p.emoji}
-              </div>
-              <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: `6px solid ${p.bg}`, marginTop: -1 }} />
-            </div>
-          ))}
-          {/* 참여자 아바타 */}
-          <div style={{ position: 'absolute', bottom: 16, right: 20, display: 'flex' }}>
-            {['#FFD9C7', '#D7E4FF', '#D9F2DD'].map((bg, i) => (
-              <div key={i} style={{ width: 28, height: 28, borderRadius: 999, background: bg, border: '2px solid #fff', marginLeft: i === 0 ? 0 : -8, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>
-                {['S', '현', '유'][i]}
-              </div>
-            ))}
-            <div style={{ width: 28, height: 28, borderRadius: 999, background: 'var(--primary)', border: '2px solid #fff', marginLeft: -8, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-              +9
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* 하단 버튼 영역 */}

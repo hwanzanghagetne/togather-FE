@@ -15,6 +15,7 @@ import HostTransferPage from './pages/HostTransferPage'
 import ReportPage from './pages/ReportPage'
 import JoinRequestPage from './pages/JoinRequestPage'
 import NotificationSettingsPage from './pages/NotificationSettingsPage'
+import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import TabLayout from './components/TabLayout'
 import RequireAuth from './components/RequireAuth'
 
@@ -50,6 +51,7 @@ export default function App() {
       <Route path="/report" element={<ReportPage />} />
       <Route path="/meetups/:meetupId/join-request" element={<JoinRequestPage />} />
       <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
+      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
     </Routes>
   )
 }
