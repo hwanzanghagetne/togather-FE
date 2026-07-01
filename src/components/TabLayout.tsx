@@ -25,8 +25,8 @@ export default function TabLayout({ children }: { children: React.ReactNode }) {
               style={{ ...s.tabBtn, color: active ? 'var(--primary)' : '#AEB1BA' }}
               onClick={() => navigate(tab.path)}
             >
-              <Icon size={23} strokeWidth={active ? 2.4 : 1.8} />
-              <span style={{ ...s.tabLabel, fontWeight: active ? 600 : 500 }}>{tab.label}</span>
+              <Icon size={26} strokeWidth={active ? 2.35 : 2.05} />
+              <span style={{ ...s.tabLabel, fontWeight: active ? 700 : 600 }}>{tab.label}</span>
             </button>
           )
         })}
@@ -40,8 +40,10 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     background: '#fff',
     borderTop: '1px solid var(--wds-line)',
-    height: 60,
-    paddingBottom: 'max(4px, env(safe-area-inset-bottom))',
+    minHeight: 76,
+    paddingTop: 8,
+    paddingBottom: 'max(12px, calc(8px + env(safe-area-inset-bottom)))',
+    boxShadow: '0 -6px 18px rgba(15,20,30,.05)',
     flexShrink: 0,
   },
   tabBtn: {
@@ -52,12 +54,14 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 6,
     cursor: 'pointer',
-    padding: 0,
+    padding: '2px 0 0',
+    minHeight: 56,
   },
   tabLabel: {
-    fontSize: 10,
-    letterSpacing: '0.01em',
+    fontSize: 12,
+    lineHeight: '16px',
+    letterSpacing: 0,
   },
 }

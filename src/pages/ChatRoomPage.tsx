@@ -38,6 +38,9 @@ interface MeetupDetail {
   longitude?: number
   meetingDate?: string
   meetingTime?: string
+  timeMode?: 'FLEXIBLE' | 'EXACT'
+  minAge?: number
+  maxAge?: number
   ageMin?: number
   ageMax?: number
   currentCount?: number
@@ -114,8 +117,15 @@ function toDisplayMessage(
   }
 }
 
-function formatDateTime(dateStr?: string, timeStr?: string) {
-  if (!dateStr || !timeStr) return ''
+function formatDateTime(dateStr?: string, timeMode?: 'FLEXIBLE' | 'EXACT', timeStr?: string) {
+  if (!dateStr) return ''
+  if (timeMode === 'FLEXIBLE' || !timeStr) {
+    const d = new Date(`${dateStr}T00:00:00`)
+    const today = new Date()
+    const isToday = d.toDateString() === today.toDateString()
+    const dayLabel = isToday ? '오늘' : `${d.getMonth() + 1}월 ${d.getDate()}일`
+    return timeMode === 'FLEXIBLE' ? `${dayLabel} · 하루 중 언제든` : dayLabel
+  }
   const d = new Date(`${dateStr}T${timeStr}`)
   const today = new Date()
   const isToday = d.toDateString() === today.toDateString()
@@ -125,6 +135,13 @@ function formatDateTime(dateStr?: string, timeStr?: string) {
   const ampm = h24 < 12 ? '오전' : '오후'
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12
   return `${dayLabel} ${ampm} ${h12}:${String(m).padStart(2, '0')}`
+}
+
+function formatAgeRange(detail: MeetupDetail) {
+  const minAge = detail.minAge ?? detail.ageMin
+  const maxAge = detail.maxAge ?? detail.ageMax
+  if (minAge == null || maxAge == null) return '—'
+  return `${minAge} – ${maxAge}세`
 }
 
 // ─── MemberRow (stable, defined outside component) ────────────────────────────
@@ -259,7 +276,11 @@ export default function ChatRoomPage() {
         setCategory(data.category ?? '')
         setAddress((data.address ?? '').replace(/^대한민국\s*/, ''))
         setIsPublic(data.visibility !== 'PRIVATE')
-        setDetail(data)
+        setDetail({
+          ...data,
+          ageMin: data.ageMin ?? data.minAge,
+          ageMax: data.ageMax ?? data.maxAge,
+        })
       })
       .catch(() => {})
   }, [mid])
@@ -304,9 +325,15 @@ export default function ChatRoomPage() {
 
   const fetchMembers = useCallback(async () => {
     if (!mid) return
-    const r = await apiFetch(`/api/meetups/${mid}/members`)
-    if (r.ok) setMembers(await r.json())
-  }, [mid])
+    const r = await apiFetch(`/api/meetups/${mid}/participants`)
+    if (!r.ok) return
+    const list = await r.json()
+    setMembers(list.map((member: { userId: number; nickname: string }, index: number) => ({
+      id: member.userId,
+      nickname: member.nickname,
+      isHost: index === 0 || member.userId === hostId,
+    })))
+  }, [hostId, mid])
 
   const handleSend = () => {
     const trimmed = draft.trim()
@@ -323,9 +350,9 @@ export default function ChatRoomPage() {
   // ── ① 모임 정보 ──────────────────────────────────────────────────────────────
   if (view === 'info') {
     const rows = [
-      { icon: <Calendar size={19} color="var(--primary)" />, label: '일시', value: formatDateTime(detail.meetingDate, detail.meetingTime) || '—' },
+      { icon: <Calendar size={19} color="var(--primary)" />, label: '일시', value: formatDateTime(detail.meetingDate, detail.timeMode, detail.meetingTime) || '—' },
       { icon: <MapPin size={19} color="var(--primary)" />,   label: '위치', value: address || '—' },
-      { icon: <Users size={19} color="var(--primary)" />,    label: '나이대', value: detail.ageMin && detail.ageMax ? `${detail.ageMin} – ${detail.ageMax}세` : '—' },
+      { icon: <Users size={19} color="var(--primary)" />,    label: '나이대', value: formatAgeRange(detail) },
       { icon: <Crown size={19} color="var(--primary)" />,    label: '호스트', value: detail.hostNickname || '—', isHost: true },
     ]
 
@@ -871,4 +898,6 @@ const st: Record<string, React.CSSProperties> = {
   toggle: { width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 200ms ease', flexShrink: 0, padding: 0 },
   toggleKnob: { position: 'absolute', top: 2, left: 2, width: 20, height: 20, borderRadius: 999, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.2)', transition: 'transform 200ms ease' },
 }
+
+
 
