@@ -56,19 +56,25 @@ export default function MeetupListPage() {
       .catch(() => {})
   }, [])
 
-  const fetchMyMeetups = useCallback(async () => {
-    setLoading(true)
+  const fetchMyMeetups = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const r = await apiFetch('/api/meetups/my')
       if (r.status === 401) { navigate('/'); return }
       if (!r.ok) return
       setMeetups(await r.json())
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [navigate])
 
   useEffect(() => { fetchMyMeetups() }, [fetchMyMeetups])
+
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) fetchMyMeetups(true) }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [fetchMyMeetups])
 
   const categorized = useMemo(() => {
     const active = meetups.filter((m) => m.status !== 'CLOSED')
@@ -102,7 +108,7 @@ export default function MeetupListPage() {
             <button
               key={t.key}
               style={{ ...s.tabBtn, color: isActive ? 'var(--primary)' : 'var(--text-assistive)', borderBottom: isActive ? '2px solid var(--primary)' : '2px solid transparent' }}
-              onClick={() => setTab(t.key)}
+              onClick={() => { setTab(t.key); fetchMyMeetups(true) }}
             >
               {t.label}
               {count > 0 && (

@@ -14,6 +14,7 @@ import SafetyCenterPage from './pages/SafetyCenterPage'
 import HostTransferPage from './pages/HostTransferPage'
 import ReportPage from './pages/ReportPage'
 import JoinRequestPage from './pages/JoinRequestPage'
+import JoinRequestManagePage from './pages/JoinRequestManagePage'
 import NotificationSettingsPage from './pages/NotificationSettingsPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import TabLayout from './components/TabLayout'
@@ -38,6 +39,7 @@ export default function App() {
   ) : (
     <Routes>
       <Route path="/" element={<OnboardingFlow />} />
+      <Route path="/login" element={<OnboardingFlow />} />
       <Route path="/onboarding" element={<OnboardingFlow />} />
       <Route path="/meetups/new" element={<CreateMeetupPage />} />
       <Route path="/meetups/:id/posted" element={<MeetupPostedPage />} />
@@ -50,8 +52,10 @@ export default function App() {
       <Route path="/safety" element={<SafetyCenterPage />} />
       <Route path="/report" element={<ReportPage />} />
       <Route path="/meetups/:meetupId/join-request" element={<JoinRequestPage />} />
+      <Route path="/meetups/:meetupId/join-requests" element={<JoinRequestManagePage />} />
       <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
       <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
     </Routes>
   )
 }
+

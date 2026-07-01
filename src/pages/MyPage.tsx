@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, ChevronRight, Flag, LogOut, MapPin, Settings, User } from 'lucide-react'
 import { clearJoinedMeetups } from '../meetupSession'
@@ -24,7 +24,7 @@ export default function MyPage() {
   const [statsLoading, setStatsLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     apiFetch('/api/members/me')
       .then((r) => r.ok ? r.json() : null)
       .then((d) => setMe(d))
@@ -35,6 +35,14 @@ export default function MyPage() {
       .catch(() => {})
       .finally(() => setStatsLoading(false))
   }, [])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) fetchData() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [fetchData])
 
   const handleLogout = async () => {
     if (loggingOut) return

@@ -1,29 +1,34 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, MessageCircle, UserPlus, Zap } from 'lucide-react'
+import { ChevronLeft, UserPlus, Zap } from 'lucide-react'
 import { apiFetch } from '../api'
 
 interface Notification {
   id: number
-  type: 'JOIN_REQUEST' | 'MEETUP_START' | 'CHAT_MESSAGE' | 'REVIEW_REQUEST'
-  message: string
+  type: 'JOIN_REQUESTED' | 'APPROVED' | 'REJECTED'
+  actorNickname: string
   meetupId?: number
   isRead: boolean
   createdAt: string
 }
 
+function notiMessage(n: Notification): string {
+  if (n.type === 'JOIN_REQUESTED') return `${n.actorNickname}님이 참여를 요청했어요`
+  if (n.type === 'APPROVED') return '참여 요청이 승인됐어요! 채팅방에 입장할 수 있어요'
+  if (n.type === 'REJECTED') return '참여 요청이 거절됐어요'
+  return ''
+}
+
 const NOTI_ICON: Record<string, React.ReactNode> = {
-  JOIN_REQUEST: <UserPlus size={18} color="var(--primary)" />,
-  MEETUP_START: <Zap size={18} color="#FF6B35" fill="#FF6B35" />,
-  CHAT_MESSAGE: <MessageCircle size={18} color="var(--primary)" />,
-  REVIEW_REQUEST: <span style={{ fontSize: 18 }}>⭐</span>,
+  JOIN_REQUESTED: <UserPlus size={18} color="#6541F2" />,
+  APPROVED:       <span style={{ fontSize: 18 }}>✅</span>,
+  REJECTED:       <span style={{ fontSize: 18 }}>❌</span>,
 }
 
 const NOTI_BG: Record<string, string> = {
-  JOIN_REQUEST: 'var(--primary-tint)',
-  MEETUP_START: 'rgba(255,107,53,.1)',
-  CHAT_MESSAGE: 'var(--primary-tint)',
-  REVIEW_REQUEST: 'rgba(255,176,32,.12)',
+  JOIN_REQUESTED: 'rgba(101,65,242,.1)',
+  APPROVED:       'rgba(0,191,64,.1)',
+  REJECTED:       'rgba(255,66,66,.08)',
 }
 
 function formatTime(iso: string) {
@@ -53,7 +58,7 @@ export default function NotificationPage() {
   const [notis, setNotis] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchNotis = useCallback(() => {
     apiFetch('/api/members/me/notifications')
       .then((r) => r.ok ? r.json() : [])
       .then((d: Notification[]) => setNotis(d))
@@ -61,8 +66,16 @@ export default function NotificationPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  useEffect(() => { fetchNotis() }, [fetchNotis])
+
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) fetchNotis() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [fetchNotis])
+
   const markRead = async (id: number) => {
-    await apiFetch(`/api/members/me/notifications/${id}/read`, { method: 'POST' }).catch(() => {})
+    await apiFetch(`/api/members/me/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {})
     setNotis((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
   }
 
@@ -103,14 +116,17 @@ export default function NotificationPage() {
                     style={{ ...s.notiRow, background: n.isRead ? '#fff' : 'rgba(22,169,196,.04)' }}
                     onClick={() => {
                       markRead(n.id)
-                      if (n.meetupId) navigate(`/chat/${n.meetupId}`)
+                      if (!n.meetupId) return
+                      if (n.type === 'JOIN_REQUESTED') navigate(`/meetups/${n.meetupId}/join-requests`)
+                      else if (n.type === 'APPROVED') navigate(`/chat/${n.meetupId}`)
+                      // REJECTED: 이동 없음
                     }}
                   >
                     <div style={{ ...s.iconWrap, background: NOTI_BG[n.type] ?? 'var(--wds-fill)' }}>
                       {NOTI_ICON[n.type] ?? <Zap size={18} />}
                     </div>
                     <div style={s.notiBody}>
-                      <div style={s.notiMsg}>{n.message}</div>
+                      <div style={s.notiMsg}>{notiMessage(n)}</div>
                       <div style={s.notiTime}>{formatTime(n.createdAt)}</div>
                     </div>
                     {!n.isRead && <div style={s.unreadDot} />}
@@ -152,3 +168,4 @@ const s: Record<string, React.CSSProperties> = {
   notiTime: { marginTop: 3, fontSize: 11.5, color: 'var(--text-assistive)' },
   unreadDot: { width: 8, height: 8, borderRadius: 999, background: 'var(--primary)', flexShrink: 0 },
 }
+
