@@ -822,8 +822,8 @@ export default function ChatRoomPage() {
 // ─── styles ───────────────────────────────────────────────────────────────────
 
 const st: Record<string, React.CSSProperties> = {
-  page:  { minHeight: '100dvh', background: 'var(--wds-fill)' },
-  shell: { minHeight: '100dvh', maxWidth: 430, margin: '0 auto', display: 'flex', flexDirection: 'column', background: 'var(--wds-fill)' },
+  page:  { height: '100dvh', background: 'var(--wds-fill)', overflow: 'hidden' },
+  shell: { height: '100dvh', maxWidth: 430, margin: '0 auto', display: 'flex', flexDirection: 'column', background: 'var(--wds-fill)' },
 
   header: { height: 58, background: '#fff', borderBottom: '1px solid var(--wds-line)', display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 1px 4px rgba(0,0,0,.04)' },
   headerCenter: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: 700, color: 'var(--text-normal)' },
@@ -834,7 +834,7 @@ const st: Record<string, React.CSSProperties> = {
 
   groupHeader: { padding: '14px 20px 4px', fontSize: 12, fontWeight: 700, color: '#9a9da6', letterSpacing: '0.04em' },
 
-  body: { flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 },
+  body: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 },
   announcementWrap: { display: 'flex', justifyContent: 'center', margin: '4px 0' },
   announcement: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, background: 'var(--primary-tint)', color: 'var(--primary)', fontSize: 12, fontWeight: 600 },
   joinMessage: { alignSelf: 'center', fontSize: 11.5, color: 'var(--text-assistive)', margin: '2px 0' },

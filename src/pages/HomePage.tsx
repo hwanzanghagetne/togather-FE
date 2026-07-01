@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api'
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api'
 import { Bell, Crosshair, List, Lock, Plus, UserPlus, X, Zap } from 'lucide-react'
 import { apiFetch } from '../api'
 import { markJoinedMeetup, markLeftMeetup } from '../meetupSession'
@@ -88,37 +88,51 @@ function formatAddr(address?: string) {
   return address.replace(/^대한민국\s*/, '').split(' ').slice(-2).join(' ')
 }
 
-function PinMarker({ color, emoji, count, selected, onClick }: {
-  color: string; emoji: string; count: number; selected: boolean; onClick: () => void
-}) {
-  const size = selected ? 48 : 40
-  return (
-    <div
-      onClick={(e) => { e.stopPropagation(); onClick() }}
-      style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', transform: 'translate(-50%,-100%)', cursor: 'pointer' }}
-    >
-      <div style={{
-        width: size, height: size, borderRadius: 999,
-        background: color, border: '3px solid #fff',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: selected ? `0 6px 18px ${color}70` : '0 4px 10px rgba(0,0,0,0.2)',
-        transition: 'all 150ms ease', position: 'relative',
-      }}>
-        <span style={{ fontSize: selected ? 18 : 16 }}>{emoji}</span>
-        {count > 1 && (
-          <div style={{
-            position: 'absolute', top: -5, right: -5,
-            minWidth: 18, height: 18, borderRadius: 999,
-            background: '#fff', color: '#16161A',
-            fontSize: 10, fontWeight: 700,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '1.5px solid rgba(0,0,0,0.08)', padding: '0 3px',
-          }}>{count}</div>
-        )}
-      </div>
-      <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: `8px solid ${color}`, marginTop: -1 }} />
-    </div>
-  )
+function createPinSvg(color: string, emoji: string, count: number, selected: boolean): string {
+  const size = selected ? 52 : 44
+  const cx = size / 2
+  const cy = size / 2
+  const r = cx - 2
+  const tailH = 9
+  const totalH = size + tailH
+  const badge = count > 1
+    ? `<circle cx="${size - 5}" cy="5" r="9" fill="white"/>
+       <text x="${size - 5}" y="9" text-anchor="middle" dominant-baseline="middle" font-family="system-ui" font-size="10" font-weight="700" fill="#16161A">${count}</text>`
+    : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${totalH}">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" stroke="white" stroke-width="3"/>
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-size="${selected ? 22 : 18}">${emoji}</text>
+    ${badge}
+    <polygon points="${cx - 5},${size - 1} ${cx + 5},${size - 1} ${cx},${totalH}" fill="${color}"/>
+  </svg>`
+}
+
+
+function svgToDataUrl(svg: string) {
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
+function createPinIcon(color: string, emoji: string, count: number, selected: boolean) {
+  const size = selected ? 52 : 44
+  const totalH = size + 9
+  return {
+    url: svgToDataUrl(createPinSvg(color, emoji, count, selected)),
+    scaledSize: new google.maps.Size(size, totalH),
+    anchor: new google.maps.Point(size / 2, totalH),
+  }
+}
+
+function createMyLocationIcon() {
+  const size = 24
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+    <circle cx="12" cy="12" r="10" fill="rgba(22,169,196,0.22)"/>
+    <circle cx="12" cy="12" r="6" fill="#16A9C4" stroke="white" stroke-width="3"/>
+  </svg>`
+  return {
+    url: svgToDataUrl(svg),
+    scaledSize: new google.maps.Size(size, size),
+    anchor: new google.maps.Point(size / 2, size / 2),
+  }
 }
 
 export default function HomePage() {
@@ -129,10 +143,16 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('ALL')
   const [showList, setShowList] = useState(false)
   const [_myId, setMyId] = useState<number | null>(null)
+  const [hasUnread, setHasUnread] = useState(false)
   const [pending, setPending] = useState(false)
   const [searchVal, setSearchVal] = useState('')
   const [placeName, setPlaceName] = useState<string | null>(null)
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
+  const centerRef = useRef({ lat: 35.15, lng: 129.12 })
+  const meetupMarkersRef = useRef<Map<number, google.maps.Marker>>(new Map())
+  const myMarkerRef = useRef<google.maps.Marker | null>(null)
+  const filteredRef = useRef<Meetup[]>([])
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
@@ -143,25 +163,35 @@ export default function HomePage() {
 
   useEffect(() => {
     apiFetch('/api/members/me').then((r) => r.ok ? r.json() : null).then((d) => setMyId(d?.id ?? null)).catch(() => {})
+    apiFetch('/api/members/me/notifications')
+      .then((r) => r.ok ? r.json() : [])
+      .then((d: { isRead: boolean }[]) => setHasUnread(d.some((n) => !n.isRead)))
+      .catch(() => {})
   }, [])
 
-  useEffect(() => {
-    navigator.geolocation?.getCurrentPosition((pos) => {
-      setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-    })
-  }, [])
-
-  const fetchMeetups = useCallback(async (c = center) => {
+  // fetchMeetups는 centerRef를 읽어서 deps 없이 안정적으로 유지
+  const fetchMeetups = useCallback(async () => {
+    const c = centerRef.current
     const r = await apiFetch(`/api/meetups/nearby?lat=${c.lat}&lng=${c.lng}&radius=10`)
     if (r.ok) setMeetups(await r.json())
-  }, [center])
+  }, [])
 
-  // 지도 이동 시 즉시 갱신
-  useEffect(() => { fetchMeetups(center) }, [center, fetchMeetups])
+  // 초기 1회 + GPS 이동
+  useEffect(() => {
+    fetchMeetups()
+    navigator.geolocation?.getCurrentPosition((pos) => {
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+      centerRef.current = loc
+      setCenter(loc)       // GoogleMap center prop 초기값 갱신 (1회)
+      setMyLocation(loc)
+      mapRef.current?.panTo(loc)
+      fetchMeetups()
+    })
+  }, [fetchMeetups])
 
   // 30초 폴링
   useEffect(() => {
-    const id = window.setInterval(() => { fetchMeetups() }, 30_000)
+    const id = window.setInterval(fetchMeetups, 30_000)
     return () => window.clearInterval(id)
   }, [fetchMeetups])
 
@@ -187,7 +217,12 @@ export default function HomePage() {
     })
   }, [selected?.id, isLoaded])
 
-  const onMapLoad = useCallback((map: google.maps.Map) => { mapRef.current = map }, [])
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map
+    map.addListener('click', (e: google.maps.MapMouseEvent & { placeId?: string }) => {
+      if (e.placeId) e.stop()
+    })
+  }, [])
 
   const handleSearch = useCallback(() => {
     const q = searchVal.trim()
@@ -197,18 +232,21 @@ export default function HomePage() {
       if (status === 'OK' && results?.[0]?.geometry?.location) {
         const lat = results[0].geometry.location.lat()
         const lng = results[0].geometry.location.lng()
-        setCenter({ lat, lng })
+        centerRef.current = { lat, lng }
         mapRef.current?.panTo({ lat, lng })
         mapRef.current?.setZoom(15)
+        fetchMeetups()
       }
     })
-  }, [searchVal, isLoaded])
+  }, [searchVal, isLoaded, fetchMeetups])
 
   const recenter = () => {
     navigator.geolocation?.getCurrentPosition((pos) => {
       const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-      setCenter(loc)
+      centerRef.current = loc
+      setMyLocation(loc)
       mapRef.current?.panTo(loc)
+      fetchMeetups()
     })
   }
 
@@ -242,6 +280,98 @@ export default function HomePage() {
   }
 
   const filtered = activeCategory === 'ALL' ? meetups : meetups.filter((m) => m.category === activeCategory)
+  filteredRef.current = filtered
+
+  useEffect(() => {
+    if (selected && !filtered.some((m) => m.id === selected.id)) {
+      setSelected(null)
+    }
+  }, [filtered, selected])
+
+  useEffect(() => {
+    if (!isLoaded || !mapRef.current) return
+
+    const map = mapRef.current
+    const nextIds = new Set(filtered.map((m) => m.id))
+
+    for (const [id, marker] of meetupMarkersRef.current) {
+      if (!nextIds.has(id)) {
+        marker.setMap(null)
+        meetupMarkersRef.current.delete(id)
+      }
+    }
+
+    filtered.forEach((m) => {
+      const selectedNow = selected?.id === m.id
+      const icon = createPinIcon(
+        CAT_COLOR[m.category] ?? '#9A9DA6',
+        CAT_EMOJI[m.category] ?? '●',
+        m.currentCount,
+        selectedNow,
+      )
+      const position = { lat: m.blurredLatitude, lng: m.blurredLongitude }
+      const existing = meetupMarkersRef.current.get(m.id)
+
+      if (existing) {
+        existing.setPosition(position)
+        existing.setIcon(icon)
+        existing.setZIndex(selectedNow ? 200 : 100)
+        return
+      }
+
+      const marker = new google.maps.Marker({
+        map,
+        position,
+        icon,
+        zIndex: selectedNow ? 200 : 100,
+      })
+
+      marker.addListener('click', () => {
+        const next = filteredRef.current.find((item) => item.id === m.id)
+        if (!next) return
+        setSelected(next)
+        setShowList(false)
+      })
+
+      meetupMarkersRef.current.set(m.id, marker)
+    })
+  }, [filtered, isLoaded, selected?.id])
+
+  useEffect(() => {
+    if (!isLoaded || !mapRef.current) return
+
+    if (!myLocation) {
+      if (myMarkerRef.current) {
+        myMarkerRef.current.setMap(null)
+        myMarkerRef.current = null
+      }
+      return
+    }
+
+    if (!myMarkerRef.current) {
+      myMarkerRef.current = new google.maps.Marker({
+        map: mapRef.current,
+        position: myLocation,
+        icon: createMyLocationIcon(),
+        zIndex: 300,
+        clickable: false,
+      })
+      return
+    }
+
+    myMarkerRef.current.setPosition(myLocation)
+    myMarkerRef.current.setIcon(createMyLocationIcon())
+  }, [isLoaded, myLocation])
+
+  useEffect(() => {
+    return () => {
+      meetupMarkersRef.current.forEach((marker) => marker.setMap(null))
+      meetupMarkersRef.current.clear()
+      myMarkerRef.current?.setMap(null)
+      myMarkerRef.current = null
+    }
+  }, [])
+
 
   const isJoined = (m: Meetup) => m.joinStatus === 'JOINED' || m.joinStatus === 'HOST'
   const isHost = (m: Meetup) => m.joinStatus === 'HOST'
@@ -262,9 +392,9 @@ export default function HomePage() {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
         </div>
-        <button style={s.bellBtn} onClick={() => navigate('/notifications')}>
+        <button style={s.bellBtn} onClick={() => { setHasUnread(false); navigate('/notifications') }}>
           <Bell size={19} color="var(--text-normal)" strokeWidth={1.8} />
-          <span style={s.bellDot} />
+          {hasUnread && <span style={s.bellDot} />}
         </button>
       </div>
 
@@ -294,28 +424,13 @@ export default function HomePage() {
             onDragEnd={() => {
               const c = mapRef.current?.getCenter()
               if (c) {
-                const next = { lat: c.lat(), lng: c.lng() }
-                setCenter(next)
+                centerRef.current = { lat: c.lat(), lng: c.lng() }
+                fetchMeetups()
               }
             }}
             onClick={() => { setSelected(null); setShowList(false) }}
             options={{ styles: MAP_STYLES, disableDefaultUI: true, gestureHandling: 'greedy' }}
-          >
-            <OverlayView position={center} mapPaneName="overlayMouseTarget">
-              <div style={s.myDot} />
-            </OverlayView>
-            {filtered.map((m) => (
-              <OverlayView key={m.id} position={{ lat: m.blurredLatitude, lng: m.blurredLongitude }} mapPaneName="overlayMouseTarget">
-                <PinMarker
-                  color={CAT_COLOR[m.category] ?? '#9A9DA6'}
-                  emoji={CAT_EMOJI[m.category] ?? '●'}
-                  count={m.currentCount}
-                  selected={selected?.id === m.id}
-                  onClick={() => { setSelected(m); setShowList(false) }}
-                />
-              </OverlayView>
-            ))}
-          </GoogleMap>
+          />
         ) : (
           <div style={s.mapLoading}>지도 불러오는 중...</div>
         )}
@@ -559,4 +674,5 @@ const s: Record<string, React.CSSProperties> = {
   sheetCardMeta: { fontSize: 11.5, color: 'var(--text-assistive)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   sheetCardCount: { fontSize: 12.5, fontWeight: 600, color: 'var(--text-assistive)', flexShrink: 0 },
 }
+
 

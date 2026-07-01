@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Crown, MessageCircle, Plus } from 'lucide-react'
 import { apiFetch } from '../api'
 
@@ -44,7 +44,9 @@ const TABS: { key: TabKey; label: string }[] = [
 
 export default function MeetupListPage() {
   const navigate = useNavigate()
-  const [tab, setTab] = useState<TabKey>('joined')
+  const location = useLocation()
+  const initialTab = location.state?.tab as TabKey | undefined
+  const [tab, setTab] = useState<TabKey>(initialTab ?? 'joined')
   const [meetups, setMeetups] = useState<Meetup[]>([])
   const [loading, setLoading] = useState(true)
   const [myId, setMyId] = useState<number | null>(null)
@@ -75,6 +77,13 @@ export default function MeetupListPage() {
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [fetchMyMeetups])
+
+  useEffect(() => {
+    const requestedTab = location.state?.tab as TabKey | undefined
+    if (requestedTab && requestedTab !== tab) {
+      setTab(requestedTab)
+    }
+  }, [location.state, tab])
 
   const categorized = useMemo(() => {
     const active = meetups.filter((m) => m.status !== 'CLOSED')
@@ -260,3 +269,5 @@ const s: Record<string, React.CSSProperties> = {
 
   chatIcon: { width: 40, height: 40, borderRadius: 12, background: 'var(--primary-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 }
+
+

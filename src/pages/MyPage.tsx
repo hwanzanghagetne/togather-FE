@@ -107,14 +107,14 @@ export default function MyPage() {
         {/* 통계 */}
         <div style={s.statsRow}>
           {[
-            { label: '참여한 모임', value: statsLoading ? '—' : String(stats.joinedCount) },
-            { label: '만든 모임', value: statsLoading ? '—' : String(stats.hostedCount) },
-            { label: '받은 평가', value: statsLoading ? '—' : String(stats.reviewCount) },
+            { label: '참여한 모임', value: statsLoading ? '—' : String(stats.joinedCount), tab: 'joined' as const },
+            { label: '만든 모임',   value: statsLoading ? '—' : String(stats.hostedCount), tab: 'hosted' as const },
+            { label: '받은 평가',   value: statsLoading ? '—' : String(stats.reviewCount), tab: 'past' as const },
           ].map((stat) => (
-            <div key={stat.label} style={s.statItem}>
+            <button key={stat.label} style={s.statItem} onClick={() => navigate('/meetups', { state: { tab: stat.tab } })}>
               <div style={s.statValue}>{stat.value}</div>
               <div style={s.statLabel}>{stat.label}</div>
-            </div>
+            </button>
           ))}
         </div>
 
@@ -188,9 +188,9 @@ const s: Record<string, React.CSSProperties> = {
   gaugeEnd: { fontSize: 11, color: 'var(--text-assistive)' },
 
   statsRow: { display: 'flex', gap: 10 },
-  statItem: { flex: 1, padding: '16px 0', borderRadius: 16, background: '#fff', textAlign: 'center', boxShadow: 'var(--shadow-card)' },
+  statItem: { flex: 1, padding: '16px 0', borderRadius: 16, background: '#fff', textAlign: 'center', boxShadow: 'var(--shadow-card)', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 },
   statValue: { fontSize: 22, fontWeight: 700, color: 'var(--text-normal)', letterSpacing: '-0.02em' },
-  statLabel: { marginTop: 3, fontSize: 11, color: 'var(--text-assistive)', fontWeight: 500 },
+  statLabel: { fontSize: 11, color: 'var(--text-assistive)', fontWeight: 500 },
 
   menuCard: { borderRadius: 20, background: '#fff', overflow: 'hidden', boxShadow: 'var(--shadow-card)' },
   menuRow: {
@@ -209,3 +209,5 @@ const s: Record<string, React.CSSProperties> = {
   },
   version: { textAlign: 'center', fontSize: 11, color: 'var(--text-placeholder)', marginTop: 4 },
 }
+
+
