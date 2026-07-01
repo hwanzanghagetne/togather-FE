@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -6,8 +6,12 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 export default function OAuthCallbackPage() {
   const navigate = useNavigate()
   const [error, setError] = useState(false)
+  const called = useRef(false)
 
   useEffect(() => {
+    if (called.current) return
+    called.current = true
+
     const code = new URLSearchParams(window.location.search).get('code')
     if (!code) {
       setError(true)
