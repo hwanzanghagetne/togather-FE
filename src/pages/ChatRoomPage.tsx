@@ -300,7 +300,7 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (!mid) return
     const client = new Client({
-      webSocketFactory: () => new SockJS(`${import.meta.env.VITE_WS_URL ?? ''}/ws`),
+      webSocketFactory: () => new SockJS('/ws'),
       reconnectDelay: 5000,
       onConnect: () => {
         client.subscribe(`/topic/chat/${mid}`, (frame) => {
@@ -875,8 +875,8 @@ const st: Record<string, React.CSSProperties> = {
 
   footer: { background: '#fff', borderTop: '1px solid var(--wds-line)', padding: '10px 14px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10 },
   footerIconButton: { border: 'none', background: 'transparent', color: 'var(--text-assistive)', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, cursor: 'pointer', flexShrink: 0 },
-  inputWrap: { flex: 1, height: 38, borderRadius: 999, background: 'var(--wds-fill-alt)', display: 'flex', alignItems: 'center', padding: '0 8px 0 14px', gap: 4 },
-  input: { flex: 1, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-normal)', fontSize: 13.5 },
+  inputWrap: { flex: 1, height: 42, borderRadius: 999, background: 'var(--wds-fill-alt)', display: 'flex', alignItems: 'center', padding: '0 10px 0 16px', gap: 6 },
+  input: { flex: 1, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-normal)', fontSize: 16, lineHeight: '20px' },
   translateBtn: { width: 28, height: 28, borderRadius: 8, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 150ms ease' },
   translateBanner: { display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'var(--primary-tint)', fontSize: 12.5, color: 'var(--primary)', fontWeight: 500, borderTop: '1px solid rgba(22,169,196,.15)' },
   translateClose: { marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: 'var(--primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0' },
@@ -898,6 +898,7 @@ const st: Record<string, React.CSSProperties> = {
   toggle: { width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 200ms ease', flexShrink: 0, padding: 0 },
   toggleKnob: { position: 'absolute', top: 2, left: 2, width: 20, height: 20, borderRadius: 999, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.2)', transition: 'transform 200ms ease' },
 }
+
 
 
 

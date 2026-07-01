@@ -3,6 +3,8 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://port-0-togather-mqv0m8dfba5cae86.sel3.cloudtype.app/api/:path*" },
     { "source": "/oauth2/:path*", "destination": "https://port-0-togather-mqv0m8dfba5cae86.sel3.cloudtype.app/oauth2/:path*" },
-    { "source": "/login/:path*", "destination": "https://port-0-togather-mqv0m8dfba5cae86.sel3.cloudtype.app/login/:path*" }
+    { "source": "/login/:path*", "destination": "https://port-0-togather-mqv0m8dfba5cae86.sel3.cloudtype.app/login/:path*" },
+    { "source": "/ws/:path*", "destination": "https://port-0-togather-mqv0m8dfba5cae86.sel3.cloudtype.app/ws/:path*" }
   ]
 }
+
