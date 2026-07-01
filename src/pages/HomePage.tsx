@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleMap, useJsApiLoader, OverlayView } from '@react-google-maps/api'
-import { Bell, Crosshair, List, Plus, X, Zap } from 'lucide-react'
+import { Bell, Crosshair, List, Lock, Plus, UserPlus, X, Zap } from 'lucide-react'
 import { apiFetch } from '../api'
-import { readJoinedMeetupIds, markJoinedMeetup, markLeftMeetup } from '../meetupSession'
+import { markJoinedMeetup, markLeftMeetup } from '../meetupSession'
 
 const LIBRARIES: ('places')[] = ['places']
 
@@ -11,14 +11,17 @@ interface Meetup {
   id: number
   hostId: number
   title: string
-  latitude: number
-  longitude: number
+  blurredLatitude: number
+  blurredLongitude: number
+  latitude: number | null
+  longitude: number | null
   category: string
   currentCount: number
   status: string
-  visibility?: 'PUBLIC' | 'PRIVATE'
+  visibility: 'PUBLIC' | 'PRIVATE'
+  joinStatus: 'HOST' | 'JOINED' | 'PENDING' | 'NOT_JOINED'
   address?: string
-  expiresAt?: string
+  visibleUntil?: string
 }
 
 type CategoryFilter = 'ALL' | 'FOOD' | 'CAFE' | 'ACTIVITY' | 'SIGHTSEEING'
@@ -56,7 +59,9 @@ const CHIPS: Array<{ key: CategoryFilter; label: string; emoji?: string }> = [
 ]
 
 const MAP_STYLES = [
-  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.government', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.medical', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.school', stylers: [{ visibility: 'off' }] },
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
   { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
 ]
@@ -123,15 +128,17 @@ export default function HomePage() {
   const [center, setCenter] = useState({ lat: 35.15, lng: 129.12 })
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('ALL')
   const [showList, setShowList] = useState(false)
-  const [myId, setMyId] = useState<number | null>(null)
-  const [joinedIds, setJoinedIds] = useState<number[]>(() => readJoinedMeetupIds())
+  const [_myId, setMyId] = useState<number | null>(null)
   const [pending, setPending] = useState(false)
   const [searchVal, setSearchVal] = useState('')
+  const [placeName, setPlaceName] = useState<string | null>(null)
   const mapRef = useRef<google.maps.Map | null>(null)
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
     libraries: LIBRARIES,
+    language: 'ko',
+    region: 'KR',
   })
 
   useEffect(() => {
@@ -149,7 +156,36 @@ export default function HomePage() {
     if (r.ok) setMeetups(await r.json())
   }, [center])
 
+  // 지도 이동 시 즉시 갱신
   useEffect(() => { fetchMeetups(center) }, [center, fetchMeetups])
+
+  // 30초 폴링
+  useEffect(() => {
+    const id = window.setInterval(() => { fetchMeetups() }, 30_000)
+    return () => window.clearInterval(id)
+  }, [fetchMeetups])
+
+  // 앱 복귀(포그라운드) 시 즉시 갱신
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchMeetups() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [fetchMeetups])
+
+  // 참여중/방장은 정확한 좌표가 있으므로 근처 장소명 조회
+  useEffect(() => {
+    setPlaceName(null)
+    if (!selected || !isLoaded || !mapRef.current) return
+    const lat = selected.latitude
+    const lng = selected.longitude
+    if (lat == null || lng == null) return
+    const svc = new google.maps.places.PlacesService(mapRef.current)
+    svc.nearbySearch({ location: { lat, lng }, radius: 50 }, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results?.[0]?.name) {
+        setPlaceName(results[0].name)
+      }
+    })
+  }, [selected?.id, isLoaded])
 
   const onMapLoad = useCallback((map: google.maps.Map) => { mapRef.current = map }, [])
 
@@ -182,10 +218,14 @@ export default function HomePage() {
     try {
       const r = await apiFetch(`/api/meetups/${selected.id}/join`, { method: 'POST' })
       if (!r.ok) return
-      markJoinedMeetup(selected.id)
-      setJoinedIds((prev) => [...new Set([...prev, selected.id])])
+      const body = await r.json() as { joinStatus: string }
       await fetchMeetups()
-      navigate(`/chat/${selected.id}`)
+      if (body.joinStatus === 'PENDING') {
+        navigate(`/meetups/${selected.id}/join-request`)
+      } else {
+        markJoinedMeetup(selected.id)
+        navigate(`/chat/${selected.id}`)
+      }
     } finally { setPending(false) }
   }
 
@@ -196,7 +236,6 @@ export default function HomePage() {
       const r = await apiFetch(`/api/meetups/${selected.id}/join`, { method: 'DELETE' })
       if (!r.ok) return
       markLeftMeetup(selected.id)
-      setJoinedIds((prev) => prev.filter((id) => id !== selected.id))
       setSelected(null)
       await fetchMeetups()
     } finally { setPending(false) }
@@ -204,8 +243,8 @@ export default function HomePage() {
 
   const filtered = activeCategory === 'ALL' ? meetups : meetups.filter((m) => m.category === activeCategory)
 
-  const isJoined = (m: Meetup) => joinedIds.includes(m.id) || m.hostId === myId
-  const isHost = (m: Meetup) => m.hostId === myId
+  const isJoined = (m: Meetup) => m.joinStatus === 'JOINED' || m.joinStatus === 'HOST'
+  const isHost = (m: Meetup) => m.joinStatus === 'HOST'
 
   return (
     <div style={s.page}>
@@ -252,6 +291,13 @@ export default function HomePage() {
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={center} zoom={15} onLoad={onMapLoad}
+            onDragEnd={() => {
+              const c = mapRef.current?.getCenter()
+              if (c) {
+                const next = { lat: c.lat(), lng: c.lng() }
+                setCenter(next)
+              }
+            }}
             onClick={() => { setSelected(null); setShowList(false) }}
             options={{ styles: MAP_STYLES, disableDefaultUI: true, gestureHandling: 'greedy' }}
           >
@@ -259,7 +305,7 @@ export default function HomePage() {
               <div style={s.myDot} />
             </OverlayView>
             {filtered.map((m) => (
-              <OverlayView key={m.id} position={{ lat: m.latitude, lng: m.longitude }} mapPaneName="overlayMouseTarget">
+              <OverlayView key={m.id} position={{ lat: m.blurredLatitude, lng: m.blurredLongitude }} mapPaneName="overlayMouseTarget">
                 <PinMarker
                   color={CAT_COLOR[m.category] ?? '#9A9DA6'}
                   emoji={CAT_EMOJI[m.category] ?? '●'}
@@ -288,12 +334,21 @@ export default function HomePage() {
         const joined = isJoined(selected)
         const host = isHost(selected)
         const color = CAT_COLOR[selected.category] ?? '#9A9DA6'
+        const isPrivate = selected.visibility === 'PRIVATE'
         return (
           <div style={s.popupCard}>
             {/* 닫기 */}
             <button style={s.closeBtn} onClick={() => setSelected(null)}>
               <X size={18} color="var(--text-secondary)" />
             </button>
+
+            {/* 비공개 뱃지 */}
+            {isPrivate && !joined && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(101,65,242,.1)', borderRadius: 7, padding: '5px 9px', marginBottom: 12 }}>
+                <Lock size={12} color="#6541F2" />
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: '#6541F2' }}>비공개 모임</span>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 12 }}>
               {/* 카테고리 아이콘 타일 52×52 radius14 */}
@@ -313,8 +368,11 @@ export default function HomePage() {
                 </div>
                 {/* 제목 */}
                 <div style={s.popupTitle}>{selected.title}</div>
-                {/* 카테고리 라벨 */}
-                <div style={{ marginTop: 2, fontSize: 12, color: 'var(--text-assistive)' }}>{CAT_LABEL[selected.category]}</div>
+                {/* 카테고리 라벨 + 장소명 */}
+                <div style={{ marginTop: 2, fontSize: 12, color: 'var(--text-assistive)' }}>
+                  {CAT_LABEL[selected.category]}
+                  {placeName && <span style={{ marginLeft: 6, color: 'var(--text-secondary)', fontWeight: 500 }}>· {placeName}</span>}
+                </div>
               </div>
             </div>
 
@@ -335,6 +393,13 @@ export default function HomePage() {
               </span>
             </div>
 
+            {/* 비공개 안내 박스 */}
+            {isPrivate && !joined && (
+              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--wds-fill-alt)', fontSize: 12.5, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                방장이 수락하면 입장할 수 있어요
+              </div>
+            )}
+
             {/* CTA 버튼 */}
             <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
               {joined ? (
@@ -348,13 +413,21 @@ export default function HomePage() {
                     나가기
                   </button>
                 </>
-              ) : selected.visibility === 'PRIVATE' ? (
+              ) : selected.joinStatus === 'PENDING' ? (
                 <button
-                  style={{ flex: 1, height: 50, borderRadius: 12, border: 'none', background: 'var(--primary)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                  onClick={() => navigate(`/meetups/${selected.id}/join-request`)}
+                  style={{ flex: 1, height: 50, borderRadius: 12, border: 'none', background: 'rgba(255,146,0,.1)', color: '#FF9200', fontSize: 15, fontWeight: 700, cursor: 'default' }}
+                  disabled
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  참가 요청하기
+                  승인 대기 중
+                </button>
+              ) : isPrivate ? (
+                <button
+                  style={{ flex: 1, height: 50, borderRadius: 12, border: 'none', background: '#6541F2', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: pending ? 0.6 : 1 }}
+                  onClick={() => navigate(`/meetups/${selected.id}/join-request`)}
+                  disabled={pending}
+                >
+                  <UserPlus size={17} color="#fff" />
+                  참여 요청하기
                 </button>
               ) : (
                 <button
@@ -404,7 +477,12 @@ export default function HomePage() {
                 <div style={s.emptyText}>근처 모임이 없어요</div>
               ) : (
                 filtered.map((m) => (
-                  <div key={m.id} style={s.sheetCard} onClick={() => { setSelected(m); setShowList(false) }}>
+                  <div key={m.id} style={s.sheetCard} onClick={() => {
+                    setSelected(m)
+                    setShowList(false)
+                    mapRef.current?.panTo({ lat: m.blurredLatitude, lng: m.blurredLongitude })
+                    mapRef.current?.setZoom(16)
+                  }}>
                     <div style={{ width: 48, height: 48, borderRadius: 12, background: (CAT_COLOR[m.category] ?? '#9A9DA6') + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
                       {CAT_EMOJI[m.category] ?? '●'}
                     </div>
@@ -417,7 +495,7 @@ export default function HomePage() {
                       <div style={s.sheetCardMeta}>
                         {CAT_LABEL[m.category] ?? '기타'}
                         <span style={{ margin: '0 4px', color: 'var(--wds-line-strong)' }}>·</span>
-                        {timeLeftShort(m.expiresAt)}
+                        {timeLeftShort(m.visibleUntil)}
                         {formatAddr(m.address) && (
                           <>
                             <span style={{ margin: '0 4px', color: 'var(--wds-line-strong)' }}>·</span>
@@ -481,3 +559,4 @@ const s: Record<string, React.CSSProperties> = {
   sheetCardMeta: { fontSize: 11.5, color: 'var(--text-assistive)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   sheetCardCount: { fontSize: 12.5, fontWeight: 600, color: 'var(--text-assistive)', flexShrink: 0 },
 }
+

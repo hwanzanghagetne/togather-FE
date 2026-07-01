@@ -133,7 +133,7 @@ export default function CreateMeetupPage() {
   const meetingTime = `${String(timeHr).padStart(2, '0')}:${String(timeMin).padStart(2, '0')}`
 
   const mapApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
-  const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: mapApiKey, libraries: LIBRARIES })
+  const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey: mapApiKey, libraries: LIBRARIES, language: 'ko', region: 'KR' })
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -233,26 +233,23 @@ export default function CreateMeetupPage() {
 
     setSubmitting(true)
     try {
-      const descriptionBits = [
-        `meetingDate=${meetingDate}`,
-        `timeMode=${timeMode}`,
-        timeMode === 'EXACT' ? `meetingTime=${meetingTime}` : 'meetingTime=flexible',
-        `ageRange=${ageMin}-${ageMax}`,
-        `visibility=${visibility}`,
-      ]
-
       const response = await apiFetch('/api/meetups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
-          description: descriptionBits.join(' | '),
           latitude: pickedLocation.lat,
           longitude: pickedLocation.lng,
           address: address || '선택한 위치',
           category,
+          visibility,
           maxParticipants: 99,
-          expiresAt: `${meetingDate}T23:59:59`,
+          minAge: ageMin,
+          maxAge: ageMax,
+          meetingDate,
+          timeMode,
+          meetingTime: timeMode === 'EXACT' ? meetingTime : null,
+          visibleUntil: `${meetingDate}T23:59:59`,
         }),
       })
 
@@ -973,7 +970,7 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
   },
   modeCardActive: {
-    borderColor: 'var(--primary)',
+    border: '1.5px solid var(--primary)',
     background: 'rgba(22,169,196,0.08)',
   },
   modeTitle: {
@@ -1096,7 +1093,7 @@ const s: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   visibilityCardActive: {
-    borderColor: 'var(--primary)',
+    border: '1.5px solid var(--primary)',
     background: 'rgba(22,169,196,0.06)',
   },
   visibilityTitle: {

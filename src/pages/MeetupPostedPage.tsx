@@ -87,10 +87,10 @@ export default function MeetupPostedPage() {
         </div>
 
         <div style={s.footer}>
-          <button style={s.primaryBtn} onClick={() => navigate(`/chat/${id}`)}>
+          <button style={s.primaryBtn} onClick={() => navigate(`/chat/${id}`, { replace: true })}>
             모임 채팅 보기
           </button>
-          <button style={s.ghostBtn} onClick={() => navigate('/meetups')}>
+          <button style={s.ghostBtn} onClick={() => navigate('/meetups', { replace: true })}>
             목록으로
           </button>
         </div>
