@@ -837,7 +837,7 @@ export default function ChatRoomPage() {
               <Languages size={17} />
             </button>
           </div>
-          <button style={st.sendButton} onClick={handleSend} disabled={!draft.trim()}>
+          <button style={{ ...st.sendButton, background: draft.trim() ? 'var(--primary)' : '#DCE8EC', color: '#fff' }} onClick={handleSend} disabled={!draft.trim()}>
             <SendHorizonal size={24} fill="currentColor" strokeWidth={2} />
           </button>
         </footer>
@@ -873,14 +873,14 @@ const st: Record<string, React.CSSProperties> = {
   outgoingBubble: { padding: '10px 13px', borderRadius: '16px 4px 16px 16px', background: 'var(--primary)', color: '#fff', fontSize: 14, lineHeight: 1.5 },
   empty: { alignSelf: 'center', marginTop: 60, fontSize: 13, color: 'var(--text-assistive)' },
 
-  footer: { background: '#fff', borderTop: '1px solid var(--wds-line)', padding: '10px 14px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10 },
-  footerIconButton: { border: 'none', background: 'transparent', color: 'var(--text-assistive)', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, cursor: 'pointer', flexShrink: 0 },
-  inputWrap: { flex: 1, height: 42, borderRadius: 999, background: 'var(--wds-fill-alt)', display: 'flex', alignItems: 'center', padding: '0 10px 0 16px', gap: 6 },
-  input: { flex: 1, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-normal)', fontSize: 16, lineHeight: '20px' },
+  footer: { background: '#fff', borderTop: '1px solid var(--wds-line)', paddingTop: 10, paddingLeft: 14, paddingRight: 14, paddingBottom: 'max(10px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 8 },
+  footerIconButton: { border: 'none', background: 'transparent', color: 'var(--text-assistive)', width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, cursor: 'pointer', flexShrink: 0 },
+  inputWrap: { flex: 1, minWidth: 0, height: 44, borderRadius: 999, background: 'var(--wds-fill-alt)', display: 'flex', alignItems: 'center', padding: '0 10px 0 16px', gap: 6 },
+  input: { flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-normal)', fontSize: 16, lineHeight: '1.4', WebkitAppearance: 'none' },
   translateBtn: { width: 28, height: 28, borderRadius: 8, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 150ms ease' },
   translateBanner: { display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'var(--primary-tint)', fontSize: 12.5, color: 'var(--primary)', fontWeight: 500, borderTop: '1px solid rgba(22,169,196,.15)' },
   translateClose: { marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: 'var(--primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0' },
-  sendButton: { border: 'none', background: 'transparent', color: 'var(--primary)', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, cursor: 'pointer', flexShrink: 0 },
+  sendButton: { border: 'none', width: 44, height: 44, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 8px rgba(22,169,196,.18)' },
 
   menuBackdrop: { position: 'fixed', inset: 0, background: 'rgba(20,22,28,.4)', zIndex: 40 },
   menuSheet: { position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, background: '#fff', borderRadius: '22px 22px 0 0', zIndex: 50, paddingBottom: 'max(16px, env(safe-area-inset-bottom))', maxHeight: '85dvh', overflowY: 'auto' },
@@ -898,6 +898,7 @@ const st: Record<string, React.CSSProperties> = {
   toggle: { width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 200ms ease', flexShrink: 0, padding: 0 },
   toggleKnob: { position: 'absolute', top: 2, left: 2, width: 20, height: 20, borderRadius: 999, background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.2)', transition: 'transform 200ms ease' },
 }
+
 
 
 

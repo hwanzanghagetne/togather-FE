@@ -95,7 +95,7 @@ export default function Step4Profile({ onNext, onBack, state, setState }: Props)
                 width: '100%', padding: 13, borderRadius: 12,
                 border: nameFocused ? '1.5px solid var(--primary)' : '1px solid var(--wds-line)',
                 boxShadow: nameFocused ? '0 0 0 4px rgba(22,169,196,.08)' : 'none',
-                fontSize: 15, fontWeight: 500, color: 'var(--text-normal)', outline: 'none', background: '#fff',
+                fontSize: 16, fontWeight: 500, color: 'var(--text-normal)', outline: 'none', background: '#fff',
                 boxSizing: 'border-box',
               }}
             />
@@ -110,7 +110,7 @@ export default function Step4Profile({ onNext, onBack, state, setState }: Props)
               <select
                 value={country}
                 onChange={(e) => handleCountryChange(e.target.value)}
-                style={{ width: '100%', padding: '13px 36px 13px 13px', borderRadius: 12, border: 'none', background: 'var(--wds-fill-alt)', fontSize: 15, fontWeight: 500, color: 'var(--text-normal)', appearance: 'none', cursor: 'pointer', outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '13px 36px 13px 13px', borderRadius: 12, border: 'none', background: 'var(--wds-fill-alt)', fontSize: 16, fontWeight: 500, color: 'var(--text-normal)', appearance: 'none', cursor: 'pointer', outline: 'none', boxSizing: 'border-box' }}
               >
                 {COUNTRY_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.value}</option>

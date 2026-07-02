@@ -887,7 +887,7 @@ const s: Record<string, React.CSSProperties> = {
     border: '1.5px solid var(--primary)',
     boxShadow: '0 0 0 4px rgba(22,169,196,.08)',
     padding: '0 15px',
-    fontSize: 15,
+    fontSize: 16,
     color: '#16161A',
     outline: 'none',
     boxSizing: 'border-box',
