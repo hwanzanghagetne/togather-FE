@@ -24,16 +24,25 @@ export default function MyPage() {
   const [statsLoading, setStatsLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
 
-  const fetchData = useCallback(() => {
-    apiFetch('/api/members/me')
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => setMe(d))
-      .catch(() => {})
-    apiFetch('/api/members/me/stats')
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d) setStats(d) })
-      .catch(() => {})
-      .finally(() => setStatsLoading(false))
+  const fetchData = useCallback(async () => {
+    try {
+      const [meData, meetupList, statsData] = await Promise.all([
+        apiFetch('/api/members/me').then(r => r.ok ? r.json() : null).catch(() => null),
+        apiFetch('/api/meetups/my').then(r => r.ok ? r.json() : []).catch(() => []),
+        apiFetch('/api/members/me/stats').then(r => r.ok ? r.json() : null).catch(() => null),
+      ])
+      if (meData) setMe(meData)
+      const active = (meetupList as Array<{ status: string; hostId: number }>)
+        .filter(m => m.status !== 'CLOSED')
+      setStats(prev => ({
+        ...prev,
+        mannerTemperature: statsData?.mannerTemperature ?? prev.mannerTemperature,
+        reviewCount: statsData?.reviewCount ?? prev.reviewCount,
+        joinedCount: active.length,
+        hostedCount: active.filter(m => m.hostId === meData?.id).length,
+      }))
+    } catch {}
+    finally { setStatsLoading(false) }
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
