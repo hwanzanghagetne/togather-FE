@@ -828,6 +828,7 @@ export default function ChatRoomPage() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSend() } }}
               placeholder="메시지 입력"
+              maxLength={500}
               style={st.input}
             />
             <button

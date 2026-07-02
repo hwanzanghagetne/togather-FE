@@ -384,6 +384,7 @@ export default function CreateMeetupPage() {
                       value={title}
                       onChange={(event) => setTitle(event.target.value)}
                       placeholder="오늘 저녁 곱창 같이 먹어요"
+                      maxLength={50}
                       style={s.input}
                     />
                   </section>
