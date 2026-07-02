@@ -9,6 +9,7 @@ import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { markJoinedMeetup, markLeftMeetup } from '../meetupSession'
 import { apiFetch } from '../api'
+import { uploadToCloudinary } from '../cloudinary'
 
 // ─── interfaces ───────────────────────────────────────────────────────────────
 
@@ -18,13 +19,14 @@ interface ApiMessage {
   senderId: number | null
   senderNickname: string | null
   content: string
-  type: 'TEXT' | 'SYSTEM'
+  type: 'TEXT' | 'SYSTEM' | 'IMAGE'
   createdAt: string
 }
 
 interface ChatMessage {
   id: number
   type: 'announcement' | 'approved' | 'join' | 'incoming' | 'outgoing'
+  isImage?: boolean
   author?: string
   avatar?: { label: string; background: string; color: string }
   text: string
@@ -102,8 +104,9 @@ function toDisplayMessage(
       text: api.content,
     }
   }
+  const isImage = api.type === 'IMAGE'
   const isMe = api.senderId !== null && api.senderId === myId
-  if (isMe) return { id: api.id, type: 'outgoing', text: api.content }
+  if (isMe) return { id: api.id, type: 'outgoing', text: api.content, isImage }
   const senderId = api.senderId!
   if (!avatarMap.has(senderId)) {
     avatarMap.set(senderId, makeAvatar(api.senderNickname ?? '?', avatarMap.size))
@@ -114,6 +117,7 @@ function toDisplayMessage(
     author: api.senderNickname ?? undefined,
     avatar: avatarMap.get(senderId),
     text: api.content,
+    isImage,
   }
 }
 
@@ -254,9 +258,12 @@ export default function ChatRoomPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
 
+  const [imageUploading, setImageUploading] = useState(false)
+
   const stompRef = useRef<Client | null>(null)
   const avatarMap = useRef(new Map<number, ReturnType<typeof makeAvatar>>())
   const bodyRef = useRef<HTMLElement | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     apiFetch('/api/members/me')
@@ -340,9 +347,25 @@ export default function ChatRoomPage() {
     if (!trimmed || !stompRef.current?.connected) return
     stompRef.current.publish({
       destination: `/app/chat/${mid}`,
-      body: JSON.stringify({ content: trimmed }),
+      body: JSON.stringify({ content: trimmed, type: 'TEXT' }),
     })
     setDraft('')
+  }
+
+  const handleImageSend = async (file: File) => {
+    if (!stompRef.current?.connected) return
+    setImageUploading(true)
+    try {
+      const url = await uploadToCloudinary(file)
+      stompRef.current.publish({
+        destination: `/app/chat/${mid}`,
+        body: JSON.stringify({ content: url, type: 'IMAGE' }),
+      })
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '이미지 전송에 실패했어요')
+    } finally {
+      setImageUploading(false)
+    }
   }
 
   const cat = catInfo(category)
@@ -794,14 +817,22 @@ export default function ChatRoomPage() {
                   </div>
                   <div style={{ maxWidth: '78%' }}>
                     {message.author && <div style={st.author}>{message.author}</div>}
-                    <div style={st.incomingBubble}>{message.text}</div>
+                    {message.isImage ? (
+                      <img src={message.text} alt="이미지" style={st.chatImage} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                    ) : (
+                      <div style={st.incomingBubble}>{message.text}</div>
+                    )}
                   </div>
                 </div>
               )
             }
             return (
               <div key={message.id} style={st.outgoingRow}>
-                <div style={st.outgoingBubble}>{message.text}</div>
+                {message.isImage ? (
+                  <img src={message.text} alt="이미지" style={st.chatImage} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                ) : (
+                  <div style={st.outgoingBubble}>{message.text}</div>
+                )}
               </div>
             )
           })}
@@ -819,8 +850,23 @@ export default function ChatRoomPage() {
         )}
 
         <footer style={st.footer}>
-          <button style={st.footerIconButton}>
-            <Plus size={22} />
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleImageSend(file)
+              e.target.value = ''
+            }}
+          />
+          <button
+            style={st.footerIconButton}
+            onClick={() => imageInputRef.current?.click()}
+            disabled={imageUploading}
+          >
+            {imageUploading ? <div style={st.uploadSpinner} /> : <Plus size={22} />}
           </button>
           <div style={st.inputWrap}>
             <input
@@ -882,6 +928,8 @@ const st: Record<string, React.CSSProperties> = {
   translateBanner: { display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', background: 'var(--primary-tint)', fontSize: 12.5, color: 'var(--primary)', fontWeight: 500, borderTop: '1px solid rgba(22,169,196,.15)' },
   translateClose: { marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: 'var(--primary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0' },
   sendButton: { border: 'none', width: 44, height: 44, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 8px rgba(22,169,196,.18)' },
+  chatImage: { maxWidth: 200, maxHeight: 280, borderRadius: 12, display: 'block', objectFit: 'cover' as const },
+  uploadSpinner: { width: 18, height: 18, borderRadius: 999, border: '2.5px solid var(--primary-tint)', borderTopColor: 'var(--primary)', animation: 'spin 0.8s linear infinite' },
 
   menuBackdrop: { position: 'fixed', inset: 0, background: 'rgba(20,22,28,.4)', zIndex: 40 },
   menuSheet: { position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, background: '#fff', borderRadius: '22px 22px 0 0', zIndex: 50, paddingBottom: 'max(16px, env(safe-area-inset-bottom))', maxHeight: '85dvh', overflowY: 'auto' },

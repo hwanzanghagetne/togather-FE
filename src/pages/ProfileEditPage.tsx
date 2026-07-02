@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, ChevronLeft } from 'lucide-react'
 import { apiFetch } from '../api'
+import { uploadToCloudinary } from '../cloudinary'
 
 interface Me {
   id: number
@@ -22,6 +23,7 @@ export default function ProfileEditPage() {
   const [bio, setBio] = useState('')
   const [photo, setPhoto] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [nickFocused, setNickFocused] = useState(false)
   const [bioFocused, setBioFocused] = useState(false)
 
@@ -38,19 +40,35 @@ export default function ProfileEditPage() {
       .catch(() => {})
   }, [])
 
-  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) setPhoto(URL.createObjectURL(file))
+    if (!file) return
+    setPhoto(URL.createObjectURL(file))
+    setUploading(true)
+    try {
+      const url = await uploadToCloudinary(file)
+      setPhoto(url)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '사진 업로드에 실패했어요')
+      setPhoto(null)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
   }
 
   const handleSave = async () => {
-    if (saving || !nickname.trim()) return
+    if (saving || uploading || !nickname.trim() || uploading) return
     setSaving(true)
     try {
       await apiFetch('/api/members/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: nickname.trim(), bio: bio.trim() }),
+        body: JSON.stringify({
+          nickname: nickname.trim(),
+          bio: bio.trim(),
+          ...(photo ? { profileImageUrl: photo } : {}),
+        }),
       })
       navigate(-1)
     } finally {
@@ -70,11 +88,11 @@ export default function ProfileEditPage() {
           </button>
           <span style={s.headerTitle}>프로필 편집</span>
           <button
-            style={{ ...s.saveBtn, opacity: saving || !nickname.trim() ? 0.5 : 1 }}
+            style={{ ...s.saveBtn, opacity: saving || uploading || !nickname.trim() ? 0.5 : 1 }}
             onClick={handleSave}
-            disabled={saving || !nickname.trim()}
+            disabled={saving || uploading || !nickname.trim()}
           >
-            {saving ? '저장 중' : '저장'}
+            {uploading ? '업로드 중' : saving ? '저장 중' : '저장'}
           </button>
         </header>
 
@@ -175,11 +193,11 @@ export default function ProfileEditPage() {
         {/* 하단 저장 버튼 */}
         <div style={s.footer}>
           <button
-            style={{ ...s.primaryBtn, opacity: saving || !nickname.trim() ? 0.5 : 1 }}
+            style={{ ...s.primaryBtn, opacity: saving || uploading || !nickname.trim() ? 0.5 : 1 }}
             onClick={handleSave}
-            disabled={saving || !nickname.trim()}
+            disabled={saving || uploading || !nickname.trim()}
           >
-            {saving ? '저장 중...' : '저장하기'}
+            {uploading ? '사진 업로드 중...' : saving ? '저장 중...' : '저장하기'}
           </button>
         </div>
       </div>
