@@ -153,6 +153,7 @@ export default function HomePage() {
   const meetupMarkersRef = useRef<Map<number, google.maps.Marker>>(new Map())
   const myMarkerRef = useRef<google.maps.Marker | null>(null)
   const filteredRef = useRef<Meetup[]>([])
+  const placeNameCacheRef = useRef<Map<string, string>>(new Map())
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
@@ -209,11 +210,14 @@ export default function HomePage() {
     const lat = selected.latitude
     const lng = selected.longitude
     if (lat == null || lng == null) return
+    const cacheKey = `${lat},${lng}`
+    const cached = placeNameCacheRef.current.get(cacheKey)
+    if (cached !== undefined) { setPlaceName(cached); return }
     const svc = new google.maps.places.PlacesService(mapRef.current)
     svc.nearbySearch({ location: { lat, lng }, radius: 50 }, (results, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK && results?.[0]?.name) {
-        setPlaceName(results[0].name)
-      }
+      const name = status === google.maps.places.PlacesServiceStatus.OK ? (results?.[0]?.name ?? '') : ''
+      placeNameCacheRef.current.set(cacheKey, name)
+      if (name) setPlaceName(name)
     })
   }, [selected?.id, isLoaded])
 
