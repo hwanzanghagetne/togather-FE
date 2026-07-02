@@ -159,7 +159,7 @@ export default function CreateMeetupPage() {
         }
         setLoadingAddress(false)
       })
-    }, 250)
+    }, 700)
 
     return () => window.clearTimeout(timer)
   }, [isLoaded, mapCenter])
